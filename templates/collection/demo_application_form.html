@@ -1,0 +1,7 @@
+{% extends "collection/base.html" %}
+{% block title %}申请示范{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'collection:landing' %}">← 返回我的示范</a>
+<section class="page-heading compact"><span class="kicker">我的示范</span><h1>申请成为示范户</h1><p>无需用户名和密码。请填写真实的区域、品种和种植计划，区域管理员审核通过后会创建负责人账号和草稿示范点。</p></section>
+<form method="post" class="collector-form observation-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label class="{% if field.errors %}has-error{% endif %}"><span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}<button class="primary-button" type="submit">提交示范申请</button></form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "collection/base.html" %}
+{% block title %}我的示范点{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <span class="kicker">我的工作台</span>
+    <h1>我的示范点</h1>
+    <p>查看当前阶段、采集进度和待完成任务。</p>
+</section>
+{% if demo_applications %}<section class="history-panel"><h2>我的示范申请</h2>{% for application in demo_applications %}<div class="history-item"><span>{{ application.created_at|date:"Y-m-d H:i" }}</span><strong>{{ application.proposed_site_name }} · {{ application.get_status_display }}</strong><p>{{ application.variety.name }} · {{ application.province }}{{ application.city }}{% if application.review_note %} · 审核意见：{{ application.review_note }}{% endif %}</p></div>{% endfor %}</section>{% endif %}
+<div class="site-task-grid">
+    {% for site in collection_sites %}
+        <article class="site-task-card">
+            <div class="card-top"><span>{{ site.province }} {{ site.city }}</span><strong>{{ site.completed_count }}/7 阶段已提交</strong></div>
+            <h2>{{ site.name }}</h2>
+            <p>{{ site.variety.name }} · 当前阶段：{{ site.get_current_stage_display|default:"未设置" }}</p>
+            <div class="stage-dots" aria-label="七阶段进度">{% for item in site.collection_progress %}<i class="{% if item.is_done %}done{% elif item.is_rejected %}rejected{% elif item.record %}draft{% endif %}" title="{{ item.label }}"></i>{% endfor %}</div>
+            <a class="primary-button" href="{% url 'collection:site-tasks' site.pk %}">进入采集</a>
+        </article>
+    {% empty %}
+        <div class="empty-state"><h2>暂未分配示范点</h2><p>请联系管理员在后台为当前账号绑定示范点。</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

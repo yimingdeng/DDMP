@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment and local data
+.env
+.env.*
+!.env.example
+.local/
+*.sqlite3
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build and runtime
+staticfiles/
+media/
+logs/
+*.log
+
+# Local installers
+*.exe
+*.msi
+
+# Local transfer and release archives
+*.rar
+*.zip
+*.7z

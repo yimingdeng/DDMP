@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}隐私说明｜{{ site_config.site_name }}{% endblock %}
+
+{% block content %}
+<section class="list-hero privacy-hero">
+    <div class="container">
+        <span class="eyebrow">隐私与个人信息保护</span>
+        <h1>咨询服务隐私说明</h1>
+        <p>当前版本：{{ site_config.privacy_version }}</p>
+    </div>
+</section>
+<section class="content-section">
+    <article class="container privacy-content">
+        <h2>我们收集哪些信息</h2>
+        <p>当您主动提交咨询时，我们收集姓名、联系电话、所在区域、单位及您填写的咨询内容；访问统计仅使用随机匿名标识，不采集设备指纹。</p>
+        <h2>信息用途</h2>
+        <p>信息仅用于识别服务区域、安排相关人员联系、处理看田、试种或合作需求，以及汇总不包含个人身份的运营数据。</p>
+        <h2>保存与保护</h2>
+        <p>平台在业务所需期限内保存信息，并通过后台权限、操作审计和最少展示原则限制访问。未经授权不会公开您的联系方式。</p>
+        <h2>您的权利</h2>
+        <p>您可以通过页面公布的客服电话要求查询、更正或删除已提交的信息，也可以撤回后续联系授权。</p>
+        <h2>联系我们</h2>
+        <p>{% if site_config.contact_phone %}客服电话：<a href="tel:{{ site_config.contact_phone }}">{{ site_config.contact_phone }}</a>{% else %}请通过本页咨询表单联系我们。{% endif %}</p>
+    </article>
+</section>
+{% endblock %}

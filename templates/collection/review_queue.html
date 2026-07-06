@@ -1,0 +1,7 @@
+{% extends "collection/base.html" %}
+{% block title %}采集审核工作台{% endblock %}
+{% block content %}
+<section class="page-heading"><span class="kicker">{{ reviewer.role|yesno:"审核权限,审核权限" }}</span><h1>采集审核工作台</h1><p>区域审核人只能处理本区域；总部审核人在区域通过后复核并发布。</p></section>
+{% if reviewer.role == "regional" or request.user.is_superuser %}<section class="history-panel"><h2>示范申请</h2>{% for application in demo_applications %}<a class="stage-row" href="{% url 'collection:review-demo-application' application.pk %}"><span class="stage-index">申</span><span><strong>{{ application.proposed_site_name }}</strong><small>{{ application.applicant_name }} · {{ application.province }}{{ application.city }} · {{ application.variety.name }}</small></span><em class="status {{ application.status }}">{{ application.get_status_display }}</em></a>{% empty %}<p>暂无本区域示范申请。</p>{% endfor %}</section>{% endif %}
+<div class="stage-list">{% for item in review_observations %}<a class="stage-row" href="{% url 'collection:review-observation' item.pk %}"><span class="stage-index">{{ forloop.counter }}</span><span><strong>{{ item.site.name }} · {{ item.get_stage_display }}</strong><small>{{ item.site.get_region_display }} · {{ item.created_by.get_full_name|default:item.created_by.username }} · {{ item.updated_at|date:"m-d H:i" }}</small></span><em class="status {{ item.status }}">{{ item.get_status_display }}</em></a>{% empty %}<div class="empty-state"><h2>暂无待审核数据</h2></div>{% endfor %}</div>
+{% endblock %}
