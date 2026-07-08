@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260707-6">
     {% block extra_head %}{% endblock %}
     <script src="{% static 'js/gallery.js' %}" defer></script>
-    <script src="{% static 'js/site.js' %}?v=20260707-1" defer></script>
+    <script src="{% static 'js/site.js' %}?v=20260708-1" defer></script>
     <script src="{% static 'js/mobile-preview.js' %}?v=20260707-1" defer></script>
     {% if wechat_js_sdk_enabled %}
         {{ share_meta|json_script:"wechat-share-meta" }}
@@ -51,7 +51,12 @@
 
     {% if messages %}
         <div class="message-stack" aria-live="polite">
-            {% for message in messages %}<div class="message message-{{ message.tags }}">{{ message }}</div>{% endfor %}
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}" data-flash-message{% if message.tags == "success" or message.tags == "info" %} data-auto-dismiss-ms="5000"{% endif %}>
+                    <span>{{ message }}</span>
+                    <button type="button" data-dismiss-message aria-label="关闭提示">×</button>
+                </div>
+            {% endfor %}
         </div>
     {% endif %}
 

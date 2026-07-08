@@ -975,11 +975,41 @@ a {
 }
 
 .message {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     padding: 14px 18px;
     background: white;
     border-left: 5px solid var(--green-500);
     border-radius: 10px;
     box-shadow: var(--shadow);
+    transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.message.is-leaving {
+    opacity: 0;
+    transform: translateX(16px);
+}
+
+.message [data-dismiss-message] {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: var(--green-950);
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    font: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.message [data-dismiss-message]:focus-visible {
+    outline: 2px solid var(--green-500);
+    outline-offset: 2px;
 }
 
 .message-error {

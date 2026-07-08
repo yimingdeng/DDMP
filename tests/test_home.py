@@ -117,7 +117,7 @@ def test_home_page_uses_published_featured_variety(client):
     assert f'href="{variety.get_absolute_url()}">查看品种详情</a>' in content
     assert 'href="#regional-contacts">我要咨询</a>' in content
     assert "data-home-first-action" in content
-    assert "site.js?v=20260707-1" in content
+    assert "site.js?v=20260708-1" in content
     assert 'class="home-page has-mobile-action-bar"' in content
     assert 'aria-label="页面快捷操作"' in content
     assert f'data-default-href="{variety.get_absolute_url()}"' in content

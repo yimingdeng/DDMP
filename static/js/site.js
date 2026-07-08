@@ -8,6 +8,29 @@ document.querySelectorAll("form[data-prevent-double-submit]").forEach((form) => 
     });
 });
 
+document.querySelectorAll("[data-flash-message]").forEach((message) => {
+    let dismissTimer;
+    const dismiss = () => {
+        if (message.classList.contains("is-leaving")) return;
+        message.classList.add("is-leaving");
+        window.setTimeout(() => {
+            const stack = message.parentElement;
+            message.remove();
+            if (stack && !stack.querySelector("[data-flash-message]")) stack.remove();
+        }, 220);
+    };
+    const closeButton = message.querySelector("[data-dismiss-message]");
+    if (closeButton) closeButton.addEventListener("click", dismiss);
+    const delay = Number(message.dataset.autoDismissMs || 0);
+    if (delay > 0) {
+        dismissTimer = window.setTimeout(dismiss, delay);
+        message.addEventListener("mouseenter", () => window.clearTimeout(dismissTimer));
+        message.addEventListener("mouseleave", () => {
+            dismissTimer = window.setTimeout(dismiss, 2000);
+        });
+    }
+});
+
 if (/aweme|douyin|bytedance/i.test(navigator.userAgent)) {
     document.documentElement.classList.add("douyin-browser");
 }

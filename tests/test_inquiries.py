@@ -77,6 +77,32 @@ def test_user_can_submit_inquiry_and_admin_data_is_created(client):
 
 
 @pytest.mark.django_db
+def test_inquiry_success_message_auto_dismisses_and_can_be_closed(client, settings):
+    response = client.post(
+        reverse("inquiries:submit"),
+        {
+            "name": "自动关闭测试",
+            "phone": "13900000002",
+            "area_name": "河南",
+            "privacy_consent": "on",
+            "intent_type": InquiryIntent.CONSULTATION,
+            "submission_key": new_submission_key(),
+            "next": "/",
+        },
+        follow=True,
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "咨询信息已提交" in content
+    assert 'data-auto-dismiss-ms="5000"' in content
+    assert "data-dismiss-message" in content
+    script = (settings.BASE_DIR / "static/js/site.js").read_text(encoding="utf-8")
+    assert 'document.querySelectorAll("[data-flash-message]")' in script
+    assert "window.setTimeout(dismiss, delay)" in script
+
+
+@pytest.mark.django_db
 def test_inquiry_requires_valid_contact_and_privacy_consent(client):
     response = client.post(
         reverse("inquiries:submit"),
