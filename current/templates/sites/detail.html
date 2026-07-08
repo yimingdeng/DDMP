@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }}｜{{ site.variety.name }}{% endblock %}
+{% block body_class %}site-detail-page has-mobile-action-bar{% endblock %}
+
+{% block content %}
+<section class="detail-hero site-detail-hero">
+    <div class="container detail-hero-grid">
+        <div>
+            <a class="back-link" href="{% url 'sites:list' %}">← 返回示范点列表</a>
+            <span class="eyebrow">{{ site.get_region_display }} · {{ site.get_current_stage_display|default:"持续更新" }}</span>
+            <h1>{{ site.name }}</h1>
+            <p>{{ site.main_performance }}</p>
+        </div>
+        <div class="summary-panel">
+            <span>所属品种</span>
+            <h2><a href="{{ site.variety.get_absolute_url }}">{{ site.variety.name }}</a></h2>
+            <p>{{ site.variety.positioning }}</p>
+        </div>
+    </div>
+</section>
+
+<section class="content-section">
+    <div class="container detail-layout">
+        <article class="main-content">
+            <div class="section-heading compact">
+                <span class="eyebrow dark">现场信息</span>
+                <h2>示范点概况</h2>
+            </div>
+            <dl class="data-grid">
+                <div><dt>位置</dt><dd>{{ site.public_location }}</dd></div>
+                {% if site.sowing_date %}<div><dt>播种日期</dt><dd>{{ site.sowing_date|date:"Y年n月j日" }}</dd></div>{% endif %}
+                {% if site.area_mu %}<div><dt>示范面积</dt><dd>{{ site.area_mu|floatformat:"-2" }} 亩</dd></div>{% endif %}
+                {% if site.planting_density %}<div><dt>种植密度</dt><dd>{{ site.planting_density }} 株/亩</dd></div>{% endif %}
+                {% if site.planting_mode %}<div><dt>种植模式</dt><dd>{{ site.planting_mode }}</dd></div>{% endif %}
+                {% if site.current_stage %}<div><dt>当前阶段</dt><dd>{{ site.get_current_stage_display }}</dd></div>{% endif %}
+            </dl>
+
+            {% include "components/media_gallery.html" %}
+            {% include "components/video_list.html" %}
+
+            <div class="section-heading compact subsection">
+                <span class="eyebrow dark">田间表现</span>
+                <h2>现场介绍</h2>
+            </div>
+            <div class="prose-card rich-copy">{{ site.description|linebreaks }}</div>
+
+            {% if published_observations %}
+            <div class="section-heading compact subsection">
+                <span class="eyebrow dark">审核数据</span>
+                <h2>田间阶段记录</h2>
+            </div>
+            <div class="public-observation-list">
+                {% for snapshot in published_observations %}<article class="prose-card public-observation"><div class="public-observation-heading"><h3>{{ snapshot.observation.get_stage_display }}</h3><span>版本 {{ snapshot.version }} · {{ snapshot.published_at|date:"Y-m-d" }}</span></div><p>{{ snapshot.public_summary }}</p><dl class="data-grid">{% for label, value in snapshot.display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>{% if snapshot.observation.photos.all %}<div class="public-field-photos">{% for photo in snapshot.observation.photos.all %}<img src="{{ photo.image.url }}" alt="{{ snapshot.observation.get_stage_display }}现场照片">{% endfor %}</div>{% endif %}{% for video in snapshot.observation.videos.all %}<video class="public-field-video" controls playsinline preload="metadata" src="{{ video.video.url }}"></video>{% endfor %}</article>{% endfor %}
+            </div>
+            {% endif %}
+        </article>
+
+        <aside class="side-panel visit-panel" id="inquiry">
+            <span class="eyebrow dark">看田服务</span>
+            <h2>{{ site.get_visiting_status_display }}</h2>
+            {% if site.visiting_note %}<p>{{ site.visiting_note }}</p>{% endif %}
+            {% if site.visiting_status == "open" %}
+                {% for contact in public_contacts %}
+                    <div class="contact-card">
+                        {% if contact.show_name %}<strong>{{ contact.name }}</strong>{% endif %}
+                        {% if contact.role_title %}<span>{{ contact.role_title }}</span>{% endif %}
+                        {% if contact.show_phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% endif %}
+                    </div>
+                {% empty %}
+                    <p class="empty-copy">预约表单将在后续迭代开放。</p>
+                {% endfor %}
+            {% elif site.visiting_status == "closed" %}
+                <p class="empty-copy">本示范点看田活动已经结束，展示内容仍可继续查看。</p>
+            {% else %}
+                <p class="empty-copy">当前暂未开放预约，请关注后续更新。</p>
+            {% endif %}
+        </aside>
+    </div>
+</section>
+{% url 'sites:list' as sites_url %}
+{% include "components/mobile_action_bar.html" with first_url=sites_url first_label="返回" third_url="#inquiry" third_label="预约看田" only %}
+{% endblock %}

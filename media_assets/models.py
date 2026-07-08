@@ -158,10 +158,28 @@ class MediaAsset(PublishableModel):
             ("varieties", "sellingpoint"),
             ("sites", "demosite"),
         }
-        if self.content_type_id and self.content_type.natural_key() not in allowed_targets:
-            errors["content_type"] = "媒体只能关联品种、核心卖点或示范点。"
-        if self.target is None and self.content_type_id and self.object_id:
-            errors["object_id"] = "关联对象不存在。"
+        content_type = None
+        if self.content_type_id:
+            content_type = ContentType.objects.filter(pk=self.content_type_id).first()
+            if content_type is None:
+                errors["content_type"] = "关联类型不存在。"
+            elif content_type.natural_key() not in allowed_targets:
+                errors["content_type"] = "媒体只能关联品种、核心卖点或示范点。"
+        if content_type is not None and self.object_id:
+            target_model = content_type.model_class()
+            target = (
+                target_model._default_manager.filter(pk=self.object_id).first()
+                if target_model is not None
+                else None
+            )
+            if target is None:
+                errors["object_id"] = "关联对象不存在。"
+            else:
+                # GenericInlineFormSet assigns content_type_id/object_id after
+                # ModelForm validation, which may have cached target=None (or an
+                # old target). Keep the GenericForeignKey cache in sync with the
+                # IDs that were actually validated against the database.
+                self._meta.get_field("target").set_cached_value(self, target)
 
         if self.media_type == MediaType.IMAGE:
             if not self.image:

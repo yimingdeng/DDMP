@@ -17,10 +17,11 @@
     <link rel="canonical" href="{{ share_meta.url }}">
     <meta name="theme-color" content="#174b2a">
     <title>{% block title %}{{ site_config.site_name }}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260704-5">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260707-6">
     {% block extra_head %}{% endblock %}
     <script src="{% static 'js/gallery.js' %}" defer></script>
-    <script src="{% static 'js/site.js' %}" defer></script>
+    <script src="{% static 'js/site.js' %}?v=20260707-1" defer></script>
+    <script src="{% static 'js/mobile-preview.js' %}?v=20260707-1" defer></script>
     {% if wechat_js_sdk_enabled %}
         {{ share_meta|json_script:"wechat-share-meta" }}
         <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js" defer></script>

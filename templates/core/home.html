@@ -6,24 +6,6 @@
 <section class="hero">
     <div class="hero-pattern" aria-hidden="true"></div>
     <div class="container hero-grid{% if hero_media %} has-featured-image{% endif %}">
-        <div class="hero-copy">
-            <span class="eyebrow">重点玉米品种 · 数字示范展示</span>
-            {% if featured_variety %}
-                <h1>{{ featured_variety.name }}</h1>
-                <p>{{ featured_variety.positioning }}</p>
-            {% else %}
-                <h1>{{ site_config.hero_title }}</h1>
-                <p>{{ site_config.hero_subtitle }}</p>
-            {% endif %}
-            <div class="hero-actions">
-                <a class="button button-primary" href="{% url 'sites:list' %}">{{ site_config.primary_cta_label }}</a>
-                {% if featured_variety %}
-                    <a class="button button-secondary" href="{{ featured_variety.get_absolute_url }}">查看品种详情</a>
-                {% endif %}
-                <a class="button button-secondary" href="#regional-contacts">{{ site_config.secondary_cta_label }}</a>
-            </div>
-            <p class="release-note">真实示范 · 持续更新 · 服务区域客户</p>
-        </div>
         <div class="field-visual{% if hero_media %} field-media{% endif %}" aria-label="{{ hero_media.alt_text|default:'抽象玉米田示意图' }}">
             {% if hero_media %}
                 {% if hero_media.media_type == "local_video" %}
@@ -52,6 +34,24 @@
                     <span>从播种到收获，持续沉淀示范数据</span>
                 </div>
             {% endif %}
+        </div>
+        <div class="hero-copy">
+            <span class="eyebrow">重点玉米品种 · 数字示范展示</span>
+            {% if featured_variety %}
+                <h1>{{ featured_variety.name }}</h1>
+                <p>{{ featured_variety.positioning }}</p>
+            {% else %}
+                <h1>{{ site_config.hero_title }}</h1>
+                <p>{{ site_config.hero_subtitle }}</p>
+            {% endif %}
+            <div class="hero-actions">
+                <a class="button button-primary" href="{% url 'sites:list' %}">{{ site_config.primary_cta_label }}</a>
+                {% if featured_variety %}
+                    <a class="button button-secondary" href="{{ featured_variety.get_absolute_url }}">查看品种详情</a>
+                {% endif %}
+                <a class="button button-secondary" href="#regional-contacts">{{ site_config.secondary_cta_label }}</a>
+            </div>
+            <p class="release-note">真实示范 · 持续更新 · 服务区域客户</p>
         </div>
     </div>
 </section>
@@ -129,8 +129,8 @@
 
 {% url 'sites:list' as sites_url %}
 {% if featured_variety %}
-    {% include "components/mobile_action_bar.html" with first_url=featured_variety.get_absolute_url first_label="看详情" first_icon="▦" third_url=sites_url third_label="看示范" only %}
+    {% include "components/mobile_action_bar.html" with first_url=featured_variety.get_absolute_url first_label="看详情" first_icon="▦" third_url=sites_url third_label="看示范" home_context=True only %}
 {% else %}
-    {% include "components/mobile_action_bar.html" with first_url="#platform" first_label="平台介绍" first_icon="▦" third_url=sites_url third_label="看示范" only %}
+    {% include "components/mobile_action_bar.html" with first_url="#platform" first_label="平台介绍" first_icon="▦" third_url=sites_url third_label="看示范" home_context=True only %}
 {% endif %}
 {% endblock %}

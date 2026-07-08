@@ -1,10 +1,74 @@
+from types import MethodType
+
 from django.contrib import admin
 
 from .models import AuditEvent, SiteConfiguration
 
 admin.site.site_header = "玉米重点品种数字展示平台"
 admin.site.site_title = "平台管理"
-admin.site.index_title = "基础管理"
+admin.site.index_title = "平台业务管理"
+
+ADMIN_APP_ORDER = (
+    "varieties",
+    "sites",
+    "media_assets",
+    "collection",
+    "inquiries",
+    "campaigns",
+    "analytics",
+    "core",
+    "auth",
+)
+
+ADMIN_MODEL_ORDER = {
+    "varieties": ("Variety", "SellingPoint"),
+    "sites": ("DemoSite", "Contact"),
+    "media_assets": ("MediaAsset",),
+    "collection": (
+        "DemoApplication",
+        "Observation",
+        "AnomalyReport",
+        "SiteAssignment",
+        "CollectionReviewer",
+        "PublishedObservation",
+        "CollectionEvent",
+    ),
+    "inquiries": ("Inquiry", "RegionalContact", "InquiryFollowUp"),
+    "campaigns": ("ChannelQRCode",),
+    "analytics": ("VisitEvent",),
+    "core": ("SiteConfiguration", "AuditEvent"),
+    "auth": ("User", "Group"),
+}
+
+
+def _order_key(value, preferred_order):
+    try:
+        return preferred_order.index(value)
+    except ValueError:
+        return len(preferred_order)
+
+
+def _get_ordered_app_list(self, request, app_label=None):
+    app_dict = self._build_app_dict(request, app_label)
+    app_list = list(app_dict.values())
+    app_list.sort(
+        key=lambda app: (
+            _order_key(app["app_label"], ADMIN_APP_ORDER),
+            app["name"],
+        )
+    )
+    for app in app_list:
+        model_order = ADMIN_MODEL_ORDER.get(app["app_label"], ())
+        app["models"].sort(
+            key=lambda model: (
+                _order_key(model["object_name"], model_order),
+                model["name"],
+            )
+        )
+    return app_list
+
+
+admin.site.get_app_list = MethodType(_get_ordered_app_list, admin.site)
 
 
 @admin.register(SiteConfiguration)

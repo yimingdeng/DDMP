@@ -109,7 +109,7 @@ def test_variety_detail_prioritizes_mobile_selling_points_and_actions(client):
     assert "联系销售" not in content
     assert "种植风险提示" in content
     assert "绝不能公开的品种备注" not in content
-    assert "site.css?v=20260704-5" in content
+    assert "site.css?v=20260707-6" in content
     site_css = (settings.BASE_DIR / "static/css/site.css").read_text(encoding="utf-8")
     assert "grid-template-columns: 108px minmax(0, 1fr);" in site_css
     assert ".variety-selling-points .section-heading.compact h2" in site_css
@@ -132,6 +132,8 @@ def test_selling_point_detail_has_contextual_mobile_actions(client):
 
     assert response.status_code == 200
     assert 'class="selling-point-page has-mobile-action-bar"' in content
+    assert 'class="detail-hero small selling-point-hero"' in content
+    assert 'class="container narrow-content selling-point-content"' in content
     expected_back_link = (
         f'href="{variety.get_absolute_url()}"><span aria-hidden="true">‹</span>返回</a>'
     )
@@ -141,3 +143,6 @@ def test_selling_point_detail_has_contextual_mobile_actions(client):
         f'href="{variety.get_absolute_url()}#demo-sites"'
         '><span aria-hidden="true">⌖</span>看示范</a>' in content
     )
+    site_css = (settings.BASE_DIR / "static/css/site.css").read_text(encoding="utf-8")
+    assert ".selling-point-page .selling-point-hero" in site_css
+    assert ".selling-point-content > .media-section" in site_css

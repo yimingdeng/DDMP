@@ -7,10 +7,21 @@
     <h1>{{ site.name }}</h1>
     <p>按田间实际进度逐阶段填写；草稿不会进入审核或公开页面。</p>
 </section>
+{% if current_task %}
+    <a class="current-collection-stage" href="{% url 'collection:edit-observation' site.pk current_task.value %}">
+        <small>当前需要采集</small>
+        <strong>{{ current_task.label }}</strong>
+        <span>{% if current_task.record.status == 'rejected' %}已退回，请修改后重新提交{% elif current_task.record.status == 'draft' %}已有草稿，继续完成采集{% else %}点击进入本阶段采集{% endif %}</span>
+    </a>
+{% else %}
+    <div class="current-collection-stage completed">
+        <small>采集进度</small><strong>全部阶段已完成</strong><span>当前没有待采集任务</span>
+    </div>
+{% endif %}
 <div class="anomaly-action"><a class="secondary-button" href="{% url 'collection:create-anomaly' site.pk %}">＋ 上报田间异常</a></div>
 <div class="stage-list">
     {% for task in tasks %}
-        <a class="stage-row" href="{% url 'collection:edit-observation' site.pk task.value %}">
+        <a class="stage-row{% if task.is_current %} current{% endif %}" href="{% url 'collection:edit-observation' site.pk task.value %}">
             <span class="stage-index">{{ forloop.counter }}</span>
             <span><strong>{{ task.label }}</strong>{% if task.record %}<small>最近更新：{{ task.record.updated_at|date:"m-d H:i" }}</small>{% else %}<small>尚未开始</small>{% endif %}</span>
             {% if task.record %}<em class="status {{ task.record.status }}">{{ task.record.get_status_display }}</em>{% else %}<em class="status pending">待采集</em>{% endif %}

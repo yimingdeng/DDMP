@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}示范点｜{{ site_config.site_name }}{% endblock %}
+{% block body_class %}site-list-page has-mobile-action-bar{% endblock %}
+
+{% block content %}
+<section class="content-section site-map-section">
+    <div class="container">
+        <div class="site-map-toolbar">
+            <div>
+                <span class="eyebrow">黄淮海 · 附近示范</span>
+                <h1>离您最近的示范点</h1>
+            </div>
+            <div class="view-mode-switch" role="group" aria-label="示范点展示模式">
+                <button type="button" data-site-view="list" aria-pressed="false">列表</button>
+                <button type="button" class="active" data-site-view="map" aria-pressed="true">地图</button>
+            </div>
+        </div>
+
+        <div class="site-list-view" data-site-panel="list" hidden>
+        <div class="site-card-grid">
+            {% for site in sites %}
+                <a class="site-card" href="{{ site.get_absolute_url }}">
+                    <div class="site-card-visual{% if site.cover_media %} has-cover{% endif %}">
+                        {% if site.cover_media %}<img src="{{ site.cover_media.display_image.url }}" alt="{{ site.cover_media.alt_text }}" loading="lazy">{% endif %}
+                        <span>{{ site.get_region_display }}</span>
+                        <strong>{{ site.get_current_stage_display|default:"持续更新" }}</strong>
+                    </div>
+                    <div class="site-card-body">
+                        <div class="site-meta">{{ site.public_location }}</div>
+                        <h2>{{ site.name }}</h2>
+                        <p>{{ site.main_performance }}</p>
+                        <span class="visit-state state-{{ site.visiting_status }}">{{ site.get_visiting_status_display }}</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-state">
+                    <h2>暂未找到示范点</h2>
+                    <p>可以清除筛选条件，或等待更多示范内容发布。</p>
+                </div>
+            {% endfor %}
+        </div>
+        </div>
+        <div class="site-map-view" data-site-panel="map">
+            {% if map_sites %}<div id="site-map" aria-label="示范点地图"></div>{% else %}<div class="empty-state"><h2>暂无可定位示范点</h2><p>请先在后台为示范点填写经纬度。</p></div>{% endif %}
+            {% if map_sites %}<p class="map-location-status" id="map-location-status" aria-live="polite">正在获取您的位置，为您查找最近的示范点……</p>{% endif %}
+            {% if missing_coordinate_count %}<p class="map-coordinate-note">另有 {{ missing_coordinate_count }} 个示范点尚未配置经纬度，请切换到列表查看。</p>{% endif %}
+        </div>
+        {{ map_sites|json_script:"site-map-data" }}
+        {{ amap_config|json_script:"amap-config" }}
+    </div>
+</section>
+{% url 'core:home' as home_url %}
+{% if featured_variety %}
+    {% include "components/mobile_action_bar.html" with first_url=home_url first_label="返回" third_url=featured_variety.get_absolute_url third_label="看详情" third_icon="▦" only %}
+{% else %}
+    {% include "components/mobile_action_bar.html" with first_url=home_url first_label="返回" third_url=home_url third_label="看详情" third_icon="▦" only %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}{% load static %}<script src="{% static 'js/site-map.js' %}?v=20260705-4" defer></script>{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "collection/base.html" %}
+{% load static %}
+{% block title %}编辑示范点信息{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'collection:site-tasks' site.pk %}">← 返回示范点任务</a>
+<section class="page-heading compact">
+    <span class="kicker">{{ site.variety.name }}</span>
+    <h1>编辑示范点信息</h1>
+    <p>维护现场基础资料，并可直接获取手机当前位置上传到后台。</p>
+</section>
+<form class="collector-form observation-form site-basic-info-form" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <section class="form-section">
+        <h2>基本信息</h2>
+        <div class="site-info-grid">
+            {% for field in form %}
+                {% if field.name != "latitude" and field.name != "longitude" %}
+                    <div class="field-block{% if field.name == 'name' or field.name == 'township_village' or field.name == 'detailed_address' or field.name == 'planting_mode' %} wide{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    <section class="form-section location-panel">
+        <div class="location-heading">
+            <div><h2>现场定位</h2><p>请在示范田现场定位。系统会转换为高德地图坐标后保存。</p></div>
+            <button class="secondary-button" type="button" data-site-locate>定位当前位置</button>
+        </div>
+        <p class="location-status" data-site-location-status aria-live="polite">手机定位需要允许浏览器访问位置；也可以手工填写坐标。</p>
+        <div class="site-info-grid coordinate-grid">
+            {% for field in form %}
+                {% if field.name == "latitude" or field.name == "longitude" %}
+                    <div class="field-block">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    <button class="primary-button submit-button" type="submit">保存示范点信息</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/site-location-form.js' %}?v=20260708-1" defer></script>{% endblock %}

@@ -1,8 +1,12 @@
+from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 from PIL import Image
 
@@ -20,7 +24,7 @@ from collection.models import (
     ReviewerRole,
     SiteAssignment,
 )
-from core.models import PublicationStatus
+from core.models import AuditEvent, PublicationStatus
 from sites.models import DemoSite, Region
 from varieties.models import Variety
 
@@ -58,6 +62,20 @@ def test_collection_requires_login(client):
     response = client.get(reverse("collection:dashboard"))
     assert response.status_code == 302
     assert reverse("collection:login") in response.url
+
+
+@pytest.mark.django_db
+def test_collection_reviewer_role_clears_irrelevant_region():
+    user = get_user_model().objects.create_user("headquarters-role-switch")
+    reviewer = CollectionReviewer(
+        user=user,
+        role=ReviewerRole.HEADQUARTERS,
+        region=Region.HUANG_HUAI_HAI,
+    )
+
+    reviewer.full_clean()
+
+    assert reviewer.region == ""
 
 
 @pytest.mark.django_db
@@ -101,6 +119,145 @@ def test_collector_only_sees_assigned_sites(client):
     assert assigned.name in content
     assert hidden.name not in content
     assert client.get(reverse("collection:site-tasks", args=(hidden.pk,))).status_code == 404
+
+
+@pytest.mark.django_db
+def test_col_task_001_highlights_current_stage_and_hides_basic_info_edit(client):
+    user = get_user_model().objects.create_user("current-task-collector")
+    site = make_site("current-task")
+    SiteAssignment.objects.create(user=user, site=site)
+    Observation.objects.create(
+        site=site,
+        stage="emergence",
+        status=CollectionStatus.DRAFT,
+        created_by=user,
+        updated_by=user,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("collection:site-tasks", args=(site.pk,)))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "当前需要采集" in content
+    assert "<strong>出苗</strong>" in content
+    assert "已有草稿，继续完成采集" in content
+    assert "编辑基本信息与定位" not in content
+    assert f'href="{reverse("collection:edit-site-basic-info", args=(site.pk,))}"' not in content
+
+
+def site_basic_info_payload(site, **changes):
+    payload = {
+        "name": site.name,
+        "region": site.region,
+        "province": site.province,
+        "city": site.city,
+        "county": site.county,
+        "township_village": site.township_village,
+        "detailed_address": site.detailed_address,
+        "area_mu": site.area_mu or "",
+        "sowing_date": site.sowing_date or "",
+        "planting_density": site.planting_density or "",
+        "planting_mode": site.planting_mode,
+        "latitude": site.latitude or "",
+        "longitude": site.longitude or "",
+    }
+    payload.update(changes)
+    return payload
+
+
+@pytest.mark.django_db
+def test_col_site_001_assigned_collector_can_update_site_and_location(client):
+    user = get_user_model().objects.create_user("site-editor")
+    site = make_site("site-edit")
+    SiteAssignment.objects.create(user=user, site=site)
+    client.force_login(user)
+    url = reverse("collection:edit-site-basic-info", args=(site.pk,))
+
+    page = client.get(url)
+    assert page.status_code == 200
+    assert "定位当前位置" in page.content.decode()
+    assert "site-location-form.js" in page.content.decode()
+
+    response = client.post(
+        url,
+        site_basic_info_payload(
+            site,
+            name="更新后的示范点",
+            township_village="高村乡后侯村",
+            area_mu="18.50",
+            latitude="34.746600",
+            longitude="113.625400",
+        ),
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("collection:site-tasks", args=(site.pk,))
+    site.refresh_from_db()
+    assert site.name == "更新后的示范点"
+    assert site.area_mu == Decimal("18.50")
+    assert site.latitude == Decimal("34.746600")
+    assert site.longitude == Decimal("113.625400")
+    event = AuditEvent.objects.get(action="site_basic_info_change")
+    assert event.actor == user
+    assert event.object_id == str(site.pk)
+
+
+@pytest.mark.django_db
+def test_col_site_001_unassigned_collector_cannot_edit_site(client):
+    user = get_user_model().objects.create_user("unassigned-site-editor")
+    site = make_site("unassigned-site-edit")
+    client.force_login(user)
+    url = reverse("collection:edit-site-basic-info", args=(site.pk,))
+
+    assert client.get(url).status_code == 404
+    assert client.post(url, site_basic_info_payload(site, name="越权修改")).status_code == 404
+    site.refresh_from_db()
+    assert site.name != "越权修改"
+
+
+@pytest.mark.django_db
+def test_col_site_001_permissioned_admin_can_edit_any_site(client):
+    user = get_user_model().objects.create_user("site-admin", is_staff=True)
+    user.user_permissions.add(
+        Permission.objects.get(content_type__app_label="sites", codename="change_demosite")
+    )
+    site = make_site("admin-site-edit")
+    client.force_login(user)
+
+    page = client.get(reverse("collection:edit-site-basic-info", args=(site.pk,)))
+
+    assert page.status_code == 200
+    assert site.name in client.get(reverse("collection:dashboard")).content.decode()
+
+
+@pytest.mark.django_db
+def test_col_site_001_requires_complete_coordinate_pair(client):
+    user = get_user_model().objects.create_user("coordinate-validator")
+    site = make_site("coordinate-validation")
+    SiteAssignment.objects.create(user=user, site=site)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("collection:edit-site-basic-info", args=(site.pk,)),
+        site_basic_info_payload(site, latitude="34.746600", longitude=""),
+    )
+
+    assert response.status_code == 200
+    assert "纬度和经度必须同时填写" in response.content.decode()
+    site.refresh_from_db()
+    assert site.latitude is None
+    assert site.longitude is None
+
+
+def test_col_site_001_browser_location_converts_wgs84_to_gcj02():
+    script = (Path(__file__).parents[1] / "static/js/site-location-form.js").read_text(
+        encoding="utf-8"
+    )
+    assert "navigator.geolocation.getCurrentPosition" in script
+    assert "wgs84ToGcj02" in script
+    assert "converted.latitude.toFixed(6)" in script
+    assert "converted.longitude.toFixed(6)" in script
 
 
 @pytest.mark.django_db
@@ -428,6 +585,86 @@ def test_two_level_review_publish_and_public_snapshot(client):
     assert "播种质量良好" in content
     assert "内部批次ABC" not in content
     assert "内部肥料方案" not in content
+
+
+@pytest.mark.django_db
+def test_fe_site_002_public_stages_are_reversed_and_photos_open_in_gallery(client, tmp_path):
+    user = get_user_model().objects.create_user("public-stage-user")
+    site = make_site("public-stage-order")
+    sowing = Observation.objects.create(
+        site=site,
+        stage="sowing",
+        status=CollectionStatus.PUBLISHED,
+        data={},
+        created_by=user,
+        updated_by=user,
+    )
+    harvest = Observation.objects.create(
+        site=site,
+        stage="harvest",
+        status=CollectionStatus.PUBLISHED,
+        data={},
+        created_by=user,
+        updated_by=user,
+    )
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        sowing_photo = ObservationPhoto.objects.create(
+            observation=sowing,
+            image=image_upload("sowing-public.jpg"),
+            caption="播种现场",
+            uploaded_by=user,
+        )
+        harvest_photo = ObservationPhoto.objects.create(
+            observation=harvest,
+            image=image_upload("harvest-public.jpg"),
+            caption="收获现场",
+            uploaded_by=user,
+        )
+        PublishedObservation.objects.create(
+            observation=sowing,
+            version=1,
+            public_data={},
+            public_summary="播种阶段详细介绍",
+            published_by=user,
+        )
+        PublishedObservation.objects.create(
+            observation=harvest,
+            version=1,
+            public_data={},
+            public_summary="收获阶段详细介绍",
+            published_by=user,
+        )
+        unreviewed_photo = ObservationPhoto.objects.create(
+            observation=harvest,
+            image=image_upload("after-publication.jpg"),
+            caption="尚未审核照片",
+            uploaded_by=user,
+        )
+
+        response = client.get(site.get_absolute_url())
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert content.index(">收获</h3>") < content.index(">播种</h3>")
+    assert content.index(harvest_photo.image.url) < content.index("收获阶段详细介绍")
+    assert content.index(sowing_photo.image.url) < content.index("播种阶段详细介绍")
+    assert f'href="{harvest_photo.image.url}"' in content
+    assert "data-media-gallery" in content
+    assert "data-gallery-item" in content
+    assert unreviewed_photo.image.url not in content
+    site.refresh_from_db()
+    assert site.current_stage == "harvest"
+
+    PublishedObservation.objects.create(
+        observation=sowing,
+        version=2,
+        public_data={},
+        public_summary="播种阶段补充版本",
+        published_by=user,
+    )
+    site.refresh_from_db()
+    assert site.current_stage == "harvest"
 
 
 @pytest.mark.django_db

@@ -93,7 +93,11 @@ class DemoSite(PublishableModel):
         default=VisitingStatus.NOT_OPEN,
     )
     visiting_note = models.CharField("预约提示", max_length=200, blank=True)
-    sort_order = models.PositiveIntegerField("排序", default=100)
+    sort_order = models.PositiveIntegerField(
+        "展示顺序",
+        default=100,
+        help_text="数字越小越靠前；相同数字再按省份、城市和名称排列。",
+    )
     internal_owner = models.CharField("内部负责人", max_length=100, blank=True)
     internal_notes = models.TextField("内部备注", blank=True)
 

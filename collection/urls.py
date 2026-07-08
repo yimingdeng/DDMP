@@ -18,6 +18,11 @@ urlpatterns = [
     path("mine/", views.dashboard, name="dashboard"),
     path("apply/", views.create_demo_application, name="create-demo-application"),
     path("sites/<int:pk>/", views.site_tasks, name="site-tasks"),
+    path(
+        "sites/<int:pk>/basic-info/",
+        views.edit_site_basic_info,
+        name="edit-site-basic-info",
+    ),
     path("sites/<int:site_pk>/anomalies/new/", views.create_anomaly, name="create-anomaly"),
     path(
         "sites/<int:site_pk>/<slug:stage>/",

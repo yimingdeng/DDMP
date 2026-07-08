@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ variety.name }}｜{{ site_config.site_name }}{% endblock %}
+{% block body_class %}variety-page has-mobile-action-bar{% endblock %}
+
+{% block content %}
+<article class="variety-mobile-page">
+    <section class="variety-hero" aria-labelledby="variety-title">
+        <div class="container variety-hero-grid{% if variety.cover_media %} has-media{% endif %}">
+            <div class="variety-hero-visual">
+                {% if variety.cover_media %}
+                    {% if variety.cover_media.media_type == "local_video" %}
+                        <video controls preload="metadata" playsinline class="variety-hero-video" poster="{{ variety.cover_media.display_image.url }}" aria-label="播放视频：{{ variety.cover_media.title|default:variety.name }}">
+                            <source src="{{ variety.cover_media.video_file.url }}" type="video/mp4">
+                            您的浏览器不支持 MP4 视频播放。
+                        </video>
+                    {% elif variety.cover_media.media_type == "video_link" %}
+                        <a class="variety-hero-video-link" href="{{ variety.cover_media.video_url }}" target="_blank" rel="noopener noreferrer" aria-label="打开视频：{{ variety.cover_media.title|default:variety.name }}">
+                            <img src="{{ variety.cover_media.display_image.url }}" alt="{{ variety.cover_media.alt_text|default:variety.cover_media.title }}" fetchpriority="high">
+                            <span class="variety-play-button" aria-hidden="true">▶</span>
+                            <small>点击播放视频</small>
+                        </a>
+                    {% else %}
+                        <img src="{{ variety.cover_media.display_image.url }}" alt="{{ variety.cover_media.alt_text }}" fetchpriority="high">
+                    {% endif %}
+                {% else %}
+                    <div class="variety-hero-placeholder" aria-label="品种影像正在更新">
+                        <span>品种影像</span>
+                        <strong>持续更新中</strong>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="variety-hero-copy">
+                <span class="eyebrow">重点推广品种</span>
+                <h1 id="variety-title">{{ variety.name }}</h1>
+                <p class="variety-positioning">{{ variety.positioning }}</p>
+                {% if variety.suitable_area %}
+                    <p class="variety-area"><span aria-hidden="true">●</span> 适宜区域：{{ variety.suitable_area }}</p>
+                {% endif %}
+                <div class="tag-row variety-tags" aria-label="品种特征">
+                    {% if variety.maturity %}<span>{{ variety.maturity }}</span>{% endif %}
+                    {% if variety.plant_type %}<span>{{ variety.plant_type }}</span>{% endif %}
+                    {% if variety.density_display %}<span>{{ variety.density_display }}</span>{% endif %}
+                </div>
+                <div class="variety-hero-actions">
+                    <a class="button button-primary" href="#regional-contacts">我要咨询</a>
+                    {% if demo_sites %}
+                        <a class="button button-secondary" href="#demo-sites">我要看田</a>
+                    {% else %}
+                        <a class="button button-secondary" href="{% url 'sites:list' %}">查看示范点</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container variety-content">
+        {% if selling_points %}
+        <section class="variety-section variety-selling-points" aria-labelledby="selling-points-title">
+            <div class="section-heading compact">
+                <span class="eyebrow dark">核心优势</span>
+                <h2 id="selling-points-title">一眼看懂品种表现</h2>
+            </div>
+            <div class="mobile-selling-grid">
+                {% for point in selling_points %}
+                    <a class="mobile-selling-card" href="{{ point.get_absolute_url }}">
+                        <div class="mobile-selling-visual">
+                            {% if point.cover_media %}
+                                <img src="{{ point.cover_media.display_image.url }}" alt="{{ point.cover_media.alt_text }}" loading="lazy">
+                            {% else %}
+                                <span aria-hidden="true">0{{ forloop.counter }}</span>
+                            {% endif %}
+                            <small>{{ point.get_point_type_display }}</small>
+                        </div>
+                        <div class="mobile-selling-copy">
+                            <h3>{{ point.title }}</h3>
+                            <p>{{ point.short_description }}</p>
+                            <span>查看依据与详情 →</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% include "components/video_list.html" %}
+        {% include "components/media_gallery.html" %}
+
+        <section class="variety-section variety-facts" aria-labelledby="facts-title">
+            <div class="section-heading compact">
+                <span class="eyebrow dark">关键参数</span>
+                <h2 id="facts-title">种植关键信息</h2>
+            </div>
+            <dl class="variety-data-grid">
+                {% if variety.suitable_area %}<div class="wide"><dt>适宜区域</dt><dd>{{ variety.suitable_area }}</dd></div>{% endif %}
+                {% if variety.maturity %}<div><dt>熟期</dt><dd>{{ variety.maturity }}</dd></div>{% endif %}
+                {% if variety.density_display %}<div><dt>适宜密度</dt><dd>{{ variety.density_display }}</dd></div>{% endif %}
+                {% if variety.plant_type %}<div><dt>株型</dt><dd>{{ variety.plant_type }}</dd></div>{% endif %}
+                {% if variety.ear_type %}<div><dt>穗型</dt><dd>{{ variety.ear_type }}</dd></div>{% endif %}
+                {% if variety.grain_type %}<div><dt>籽粒类型</dt><dd>{{ variety.grain_type }}</dd></div>{% endif %}
+                {% if variety.approval_number %}<div class="wide"><dt>审定编号</dt><dd>{{ variety.approval_number }}</dd></div>{% endif %}
+            </dl>
+        </section>
+
+        {% if demo_sites %}
+        <section class="variety-section variety-demo-sites" id="demo-sites" aria-labelledby="demo-sites-title">
+            <div class="section-heading compact section-heading-row">
+                <div>
+                    <span class="eyebrow dark">真实示范</span>
+                    <h2 id="demo-sites-title">到田间看表现</h2>
+                </div>
+                <a href="{% url 'sites:list' %}">全部示范点 →</a>
+            </div>
+            <div class="variety-site-grid">
+                {% for site in demo_sites|slice:":3" %}
+                    <a class="variety-site-card" href="{{ site.get_absolute_url }}">
+                        {% if site.cover_media %}<img src="{{ site.cover_media.display_image.url }}" alt="{{ site.cover_media.alt_text }}" loading="lazy">{% endif %}
+                        <div>
+                            <strong>{{ site.name }}</strong>
+                            <span>{{ site.public_location }}</span>
+                            {% if site.main_performance %}<p>{{ site.main_performance }}</p>{% endif %}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if variety.summary or variety.cultivation_points or variety.sowing_advice or variety.water_fertilizer_management %}
+        <section class="variety-section variety-guidance" aria-labelledby="guidance-title">
+            <div class="section-heading compact">
+                <span class="eyebrow dark">完整资料</span>
+                <h2 id="guidance-title">需要时再展开查看</h2>
+            </div>
+            {% if variety.summary %}
+            <details class="variety-disclosure">
+                <summary>品种简介</summary>
+                <p>{{ variety.summary|linebreaksbr }}</p>
+            </details>
+            {% endif %}
+            {% if variety.cultivation_points or variety.sowing_advice or variety.water_fertilizer_management %}
+            <details class="variety-disclosure">
+                <summary>栽培要点</summary>
+                <div>
+                    {% if variety.sowing_advice %}<h3>播期建议</h3><p>{{ variety.sowing_advice|linebreaksbr }}</p>{% endif %}
+                    {% if variety.water_fertilizer_management %}<h3>水肥管理</h3><p>{{ variety.water_fertilizer_management|linebreaksbr }}</p>{% endif %}
+                    {% if variety.cultivation_points %}<h3>综合要点</h3><p>{{ variety.cultivation_points|linebreaksbr }}</p>{% endif %}
+                </div>
+            </details>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if variety.risk_warning %}
+        <aside class="risk-card variety-risk" aria-labelledby="risk-title">
+            <strong id="risk-title">种植风险提示</strong>
+            <p>{{ variety.risk_warning|linebreaksbr }}</p>
+        </aside>
+        {% endif %}
+    </div>
+
+    {% url 'core:home' as home_url %}
+    {% if demo_sites %}
+        {% include "components/mobile_action_bar.html" with first_url=home_url first_label="返回" third_url="#demo-sites" third_label="看示范" only %}
+    {% else %}
+        {% url 'sites:list' as sites_url %}
+        {% include "components/mobile_action_bar.html" with first_url=home_url first_label="返回" third_url=sites_url third_label="看示范" only %}
+    {% endif %}
+</article>
+{% endblock %}

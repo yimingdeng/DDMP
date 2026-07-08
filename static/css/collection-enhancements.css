@@ -329,3 +329,116 @@
         grid-template-columns: 1fr;
     }
 }
+
+.site-card-actions,
+.site-task-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.current-collection-stage {
+    display: grid;
+    width: min(520px, 100%);
+    min-height: 174px;
+    place-content: center;
+    padding: 26px;
+    margin: 0 auto 20px;
+    color: white;
+    background: linear-gradient(135deg, #174b2a, #2f7a42);
+    border: 3px solid var(--gold);
+    border-radius: 20px;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 16px 36px rgb(23 75 42 / 22%);
+}
+
+.current-collection-stage small {
+    color: #ffe08a;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.current-collection-stage strong {
+    margin: 4px 0;
+    font-size: clamp(30px, 7vw, 44px);
+    line-height: 1.2;
+}
+
+.current-collection-stage span {
+    color: rgb(255 255 255 / 82%);
+}
+
+.current-collection-stage.completed {
+    color: var(--green);
+    background: #edf5ee;
+    border-color: #9bc5a4;
+    box-shadow: none;
+}
+
+.current-collection-stage.completed small,
+.current-collection-stage.completed span {
+    color: var(--muted);
+}
+
+.stage-row.current {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgb(239 185 62 / 22%);
+}
+
+.site-card-actions > a,
+.site-task-actions > a {
+    flex: 1 1 180px;
+    text-align: center;
+}
+
+.site-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.site-info-grid .wide {
+    grid-column: 1 / -1;
+}
+
+.location-panel {
+    border: 1px solid rgb(32 105 58 / 22%);
+    background: #f3f8f1;
+}
+
+.location-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.location-heading h2,
+.location-heading p {
+    margin: 0;
+}
+
+.location-heading p,
+.location-status {
+    color: var(--muted);
+}
+
+.location-status.error {
+    color: #a12828;
+}
+
+@media (max-width: 680px) {
+    .site-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .site-info-grid .wide {
+        grid-column: auto;
+    }
+
+    .location-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

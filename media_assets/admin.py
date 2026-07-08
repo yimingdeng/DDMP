@@ -3,11 +3,13 @@ from django.utils.html import format_html
 
 from core.admin_mixins import PublishableAdminMixin
 
+from .forms import MediaAssetAdminForm
 from .models import MediaAsset
 
 
 @admin.register(MediaAsset)
 class MediaAssetAdmin(PublishableAdminMixin, admin.ModelAdmin):
+    form = MediaAssetAdminForm
     list_display = (
         "preview",
         "title",

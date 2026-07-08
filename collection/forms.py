@@ -6,6 +6,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
+from sites.models import DemoSite
+
 from .models import AnomalyReport, DemoApplication, validate_field_video
 from .stage_fields import CHOICE_SETS, STAGE_FIELDS
 
@@ -78,6 +80,43 @@ class DemoApplicationForm(forms.ModelForm):
 
     def clean_phone(self):
         return " ".join(self.cleaned_data["phone"].strip().split())
+
+
+class DemoSiteBasicInfoForm(forms.ModelForm):
+    class Meta:
+        model = DemoSite
+        fields = (
+            "name",
+            "region",
+            "province",
+            "city",
+            "county",
+            "township_village",
+            "detailed_address",
+            "area_mu",
+            "sowing_date",
+            "planting_density",
+            "planting_mode",
+            "latitude",
+            "longitude",
+        )
+        widgets = {
+            "sowing_date": forms.DateInput(attrs={"type": "date"}),
+            "latitude": forms.NumberInput(attrs={"step": "0.000001", "inputmode": "decimal"}),
+            "longitude": forms.NumberInput(attrs={"step": "0.000001", "inputmode": "decimal"}),
+        }
+
+    def clean(self):
+        data = super().clean()
+        latitude = data.get("latitude")
+        longitude = data.get("longitude")
+        if (latitude is None) != (longitude is None):
+            message = "纬度和经度必须同时填写，或同时留空。"
+            if latitude is None:
+                self.add_error("latitude", message)
+            if longitude is None:
+                self.add_error("longitude", message)
+        return data
 
 
 class DemoApplicationReviewForm(forms.Form):

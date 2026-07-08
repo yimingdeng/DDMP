@@ -7,7 +7,7 @@ from .models import CollectionReviewer, Observation, ReviewerRole
 
 def accessible_sites(user):
     queryset = DemoSite.objects.select_related("variety")
-    if user.is_superuser:
+    if user.is_superuser or user.has_perm("sites.change_demosite"):
         return queryset
     return queryset.filter(collector_assignments__user=user, collector_assignments__is_active=True)
 

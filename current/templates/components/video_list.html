@@ -1,0 +1,41 @@
+{% if video_links %}
+<section class="media-section" aria-labelledby="video-title">
+    <div class="section-heading compact">
+        <span class="eyebrow dark">视频内容</span>
+        <h2 id="video-title">田间视频</h2>
+    </div>
+    <div class="video-grid">
+        {% for media in video_links %}
+            {% if media.media_type == "local_video" %}
+                <article class="video-card local-video-card">
+                    <video controls preload="metadata" playsinline{% if media.display_image %} poster="{{ media.display_image.url }}"{% endif %}>
+                        <source src="{{ media.video_file.url }}" type="video/mp4">
+                        您的浏览器不支持 MP4 视频播放。
+                    </video>
+                    <div class="video-body">
+                        <span>本地视频</span>
+                        <h3>{{ media.title|default:"田间视频" }}</h3>
+                        {% if media.description %}<p>{{ media.description }}</p>{% endif %}
+                    </div>
+                </article>
+            {% else %}
+                <a class="video-card" href="{{ media.video_url }}" target="_blank" rel="noopener noreferrer">
+                    <div class="video-cover">
+                        {% if media.display_image %}
+                            <img src="{{ media.display_image.url }}" alt="{{ media.alt_text|default:media.title }}" loading="lazy">
+                        {% else %}
+                            <span class="video-placeholder">{{ media.get_video_platform_display }}</span>
+                        {% endif %}
+                        <i aria-hidden="true">▶</i>
+                    </div>
+                    <div class="video-body">
+                        <span>{{ media.get_video_platform_display }}</span>
+                        <h3>{{ media.title|default:"查看视频" }}</h3>
+                        {% if media.description %}<p>{{ media.description }}</p>{% endif %}
+                    </div>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

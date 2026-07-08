@@ -7,7 +7,7 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_PIXELS = 40_000_000
 MAX_VIDEO_BYTES = 200 * 1024 * 1024
 ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
-ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+ALLOWED_IMAGE_FORMATS = {"JPEG", "MPO", "PNG", "WEBP"}
 
 
 def validate_image_upload(uploaded_file):
@@ -22,7 +22,10 @@ def validate_image_upload(uploaded_file):
     try:
         image = Image.open(uploaded_file)
         if image.format not in ALLOWED_IMAGE_FORMATS:
-            raise ValidationError("图片真实格式不受支持。")
+            detected_format = image.format or "未知"
+            raise ValidationError(
+                f"图片真实格式不受支持（检测为 {detected_format}）；请使用 JPEG、PNG 或 WebP 图片。"
+            )
         width, height = image.size
         if width <= 0 or height <= 0 or width * height > MAX_IMAGE_PIXELS:
             raise ValidationError("图片尺寸无效或像素总量超过 4000 万。")

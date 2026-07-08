@@ -51,7 +51,32 @@
                 <h2>田间阶段记录</h2>
             </div>
             <div class="public-observation-list">
-                {% for snapshot in published_observations %}<article class="prose-card public-observation"><div class="public-observation-heading"><h3>{{ snapshot.observation.get_stage_display }}</h3><span>版本 {{ snapshot.version }} · {{ snapshot.published_at|date:"Y-m-d" }}</span></div><p>{{ snapshot.public_summary }}</p><dl class="data-grid">{% for label, value in snapshot.display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>{% if snapshot.observation.photos.all %}<div class="public-field-photos">{% for photo in snapshot.observation.photos.all %}<img src="{{ photo.image.url }}" alt="{{ snapshot.observation.get_stage_display }}现场照片">{% endfor %}</div>{% endif %}{% for video in snapshot.observation.videos.all %}<video class="public-field-video" controls playsinline preload="metadata" src="{{ video.video.url }}"></video>{% endfor %}</article>{% endfor %}
+                {% for snapshot in published_observations %}
+                    <article class="prose-card public-observation">
+                        <div class="public-observation-heading">
+                            <h3>{{ snapshot.observation.get_stage_display }}</h3>
+                            <span>版本 {{ snapshot.version }} · {{ snapshot.published_at|date:"Y-m-d" }}</span>
+                        </div>
+                        {% if snapshot.public_photos %}
+                            <div class="public-field-photos" data-media-gallery>
+                                {% for photo in snapshot.public_photos %}
+                                    <a href="{{ photo.image.url }}" data-gallery-item data-caption="{{ photo.caption|default:snapshot.observation.get_stage_display }}">
+                                        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:snapshot.observation.get_stage_display }}现场照片" loading="lazy">
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% for video in snapshot.public_videos %}
+                            <video class="public-field-video" controls playsinline preload="metadata" src="{{ video.video.url }}"></video>
+                        {% endfor %}
+                        {% if snapshot.public_summary %}<p class="public-observation-summary">{{ snapshot.public_summary }}</p>{% endif %}
+                        {% if snapshot.display_rows %}
+                            <dl class="data-grid public-observation-data">
+                                {% for label, value in snapshot.display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+                            </dl>
+                        {% endif %}
+                    </article>
+                {% endfor %}
             </div>
             {% endif %}
         </article>

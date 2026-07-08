@@ -167,4 +167,5 @@ class AuditEvent(models.Model):
             "inquiry_view": "查看线索详情",
             "inquiry_change": "修改线索",
             "site_config_change": "修改站点配置",
+            "site_basic_info_change": "修改示范点基本信息",
         }.get(self.action, self.action)

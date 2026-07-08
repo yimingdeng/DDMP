@@ -4,7 +4,7 @@
 {% block body_class %}selling-point-page has-mobile-action-bar{% endblock %}
 
 {% block content %}
-<section class="detail-hero small">
+<section class="detail-hero small selling-point-hero">
     <div class="container">
         <a class="back-link" href="{{ point.variety.get_absolute_url }}">← 返回 {{ point.variety.name }}</a>
         <span class="eyebrow">{{ point.get_point_type_display }}</span>
@@ -13,7 +13,7 @@
     </div>
 </section>
 <section class="content-section">
-    <div class="container narrow-content">
+    <div class="container narrow-content selling-point-content">
         {% if point.detail %}
             <div class="prose-card rich-copy">{{ point.detail|linebreaks }}</div>
         {% endif %}

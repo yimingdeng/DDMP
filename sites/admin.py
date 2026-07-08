@@ -19,6 +19,7 @@ class SiteAssignmentInline(admin.TabularInline):
 class DemoSiteAdmin(PublishableAdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
+        "sort_order",
         "variety",
         "province",
         "city",
@@ -27,6 +28,8 @@ class DemoSiteAdmin(PublishableAdminMixin, admin.ModelAdmin):
         "status",
         "updated_at",
     )
+    list_editable = ("sort_order",)
+    ordering = ("sort_order", "province", "city", "name")
     list_filter = (
         "status",
         "region",
@@ -88,6 +91,12 @@ class DemoSiteAdmin(PublishableAdminMixin, admin.ModelAdmin):
         for deleted in formset.deleted_objects:
             deleted.delete()
         formset.save_m2m()
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        from collection.services import synchronize_site_current_stage
+
+        synchronize_site_current_stage(obj.pk)
 
 
 @admin.register(Contact)

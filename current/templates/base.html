@@ -1,0 +1,91 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="{{ share_meta.description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ share_meta.title }}">
+    <meta property="og:description" content="{{ share_meta.description }}">
+    <meta property="og:url" content="{{ share_meta.url }}">
+    {% if share_meta.image_url %}<meta property="og:image" content="{{ share_meta.image_url }}">{% endif %}
+    <meta name="twitter:card" content="{% if share_meta.image_url %}summary_large_image{% else %}summary{% endif %}">
+    <meta name="twitter:title" content="{{ share_meta.title }}">
+    <meta name="twitter:description" content="{{ share_meta.description }}">
+    {% if share_meta.image_url %}<meta name="twitter:image" content="{{ share_meta.image_url }}">{% endif %}
+    <link rel="canonical" href="{{ share_meta.url }}">
+    <meta name="theme-color" content="#174b2a">
+    <title>{% block title %}{{ site_config.site_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260707-3">
+    {% block extra_head %}{% endblock %}
+    <script src="{% static 'js/gallery.js' %}" defer></script>
+    <script src="{% static 'js/site.js' %}" defer></script>
+    <script src="{% static 'js/mobile-preview.js' %}?v=20260707-1" defer></script>
+    {% if wechat_js_sdk_enabled %}
+        {{ share_meta|json_script:"wechat-share-meta" }}
+        <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js" defer></script>
+        <script src="{% static 'js/wechat-share.js' %}" defer></script>
+    {% endif %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="{% url 'core:home' %}" aria-label="返回首页">
+                {% if site_config.logo %}
+                    <img class="brand-logo" src="{{ site_config.logo.url }}" alt="{{ site_config.company_name|default:site_config.site_name }}">
+                {% else %}
+                    <span class="brand-mark" aria-hidden="true">玉</span>
+                {% endif %}
+                <span>{{ site_config.site_name }}</span>
+            </a>
+            <nav class="site-nav" aria-label="主要导航">
+                <a href="{% url 'core:home' %}">首页</a>
+                <a href="{% url 'core:home' %}#platform">平台介绍</a>
+                <a href="{% url 'sites:list' %}">示范点</a>
+                <a class="nav-action" href="#contact">联系我们</a>
+            </nav>
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="message-stack" aria-live="polite">
+            {% for message in messages %}<div class="message message-{{ message.tags }}">{{ message }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include "components/contact_service.html" %}
+
+    <footer class="site-footer" id="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <strong>{{ site_config.company_name|default:site_config.site_name }}</strong>
+                {% if site_config.footer_text %}<p>{{ site_config.footer_text }}</p>{% endif %}
+            </div>
+            {% if site_config.contact_phone %}
+                <a class="phone-link" href="tel:{{ site_config.contact_phone }}">{{ site_config.contact_phone }}</a>
+            {% else %}
+                <span class="muted">联系方式将在后台配置后展示</span>
+            {% endif %}
+            <a class="privacy-link" href="{% url 'core:privacy' %}">隐私说明</a>
+            <a class="privacy-link" href="{% url 'collection:landing' %}">我的示范</a>
+        </div>
+    </footer>
+
+    <dialog class="lightbox" id="media-lightbox" aria-label="图片预览">
+        <button class="lightbox-close" type="button" data-lightbox-close aria-label="关闭预览">×</button>
+        <button class="lightbox-nav previous" type="button" data-lightbox-previous aria-label="上一张">‹</button>
+        <figure>
+            <img src="" alt="" data-lightbox-image>
+            <figcaption data-lightbox-caption></figcaption>
+        </figure>
+        <button class="lightbox-nav next" type="button" data-lightbox-next aria-label="下一张">›</button>
+    </dialog>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

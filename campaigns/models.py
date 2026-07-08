@@ -74,18 +74,16 @@ class ChannelQRCode(models.Model):
         super().clean()
         errors = {}
         if self.target_type == QRTargetType.VARIETY:
+            self.demo_site = None
             if not self.variety_id:
                 errors["variety"] = "品种详情二维码必须选择目标品种。"
-            if self.demo_site_id:
-                errors["demo_site"] = "品种详情二维码不能同时选择示范点。"
         elif self.target_type == QRTargetType.SITE:
+            self.variety = None
             if not self.demo_site_id:
                 errors["demo_site"] = "示范点详情二维码必须选择目标示范点。"
-            if self.variety_id:
-                errors["variety"] = "示范点详情二维码不需要选择品种。"
         elif self.target_type in {QRTargetType.HOME, QRTargetType.CONTACT}:
-            if self.variety_id or self.demo_site_id:
-                errors["target_type"] = "首页或咨询二维码不能关联品种或示范点。"
+            self.variety = None
+            self.demo_site = None
         else:
             errors["target_type"] = "请选择有效的二维码目标类型。"
         if errors:

@@ -7,6 +7,7 @@ from django.urls import reverse
 from campaigns.models import ChannelQRCode, QRTargetType
 from campaigns.views import build_scan_url
 from core.models import PublicationStatus, SiteConfiguration
+from sites.models import DemoSite, Region
 from varieties.models import Variety
 
 
@@ -17,6 +18,19 @@ def make_variety():
         positioning="二维码测试定位",
         summary="二维码测试简介",
         status=PublicationStatus.PUBLISHED,
+    )
+
+
+def make_site(variety):
+    return DemoSite.objects.create(
+        name="二维码测试示范点",
+        slug="qr-test-site",
+        variety=variety,
+        region=Region.HUANG_HUAI_HAI,
+        province="河南省",
+        city="郑州市",
+        county="测试县",
+        status=PublicationStatus.DRAFT,
     )
 
 
@@ -83,6 +97,30 @@ def test_qr_target_validation_is_clear():
         qr_code.full_clean()
 
     assert "variety" in error.value.message_dict
+
+
+@pytest.mark.django_db
+def test_adm_qr_001_target_type_clears_irrelevant_previous_targets():
+    variety = make_variety()
+    site = make_site(variety)
+    qr_code = ChannelQRCode(
+        name="目标类型切换测试",
+        target_type=QRTargetType.HOME,
+        variety=variety,
+        demo_site=site,
+        source_code="switch_target",
+    )
+
+    qr_code.full_clean()
+    assert qr_code.variety is None
+    assert qr_code.demo_site is None
+
+    qr_code.target_type = QRTargetType.SITE
+    qr_code.variety = variety
+    qr_code.demo_site = site
+    qr_code.full_clean()
+    assert qr_code.variety is None
+    assert qr_code.demo_site == site
 
 
 @pytest.mark.django_db

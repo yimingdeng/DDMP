@@ -14,6 +14,7 @@ from .forms import (
     AnomalyReportForm,
     DemoApplicationForm,
     DemoApplicationReviewForm,
+    DemoSiteBasicInfoForm,
     ObservationForm,
     ReviewActionForm,
 )
@@ -86,6 +87,19 @@ def site_tasks(request, pk):
         {"value": value, "label": label, "record": records.get(value)}
         for value, label in GrowthStage.choices
     ]
+    current_task = next(
+        (
+            task
+            for status in (CollectionStatus.REJECTED, CollectionStatus.DRAFT)
+            for task in tasks
+            if task["record"] and task["record"].status == status
+        ),
+        None,
+    )
+    if current_task is None:
+        current_task = next((task for task in tasks if task["record"] is None), None)
+    if current_task:
+        current_task["is_current"] = True
     events = CollectionEvent.objects.filter(observation__site=site).select_related(
         "observation", "actor"
     )[:30]
@@ -96,9 +110,35 @@ def site_tasks(request, pk):
         {
             "site": site,
             "tasks": tasks,
+            "current_task": current_task,
             "collection_events": events,
             "anomaly_reports": anomalies,
         },
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def edit_site_basic_info(request, pk):
+    from core.models import AuditEvent
+
+    site = get_accessible_site(request.user, pk)
+    form = DemoSiteBasicInfoForm(request.POST or None, instance=site)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        AuditEvent.objects.create(
+            actor=request.user,
+            action="site_basic_info_change",
+            object_type="示范点",
+            object_id=str(site.pk),
+            summary=f"修改示范点基本信息：{site.name}",
+        )
+        messages.success(request, "示范点基本信息和定位已保存。")
+        return redirect("collection:site-tasks", pk=site.pk)
+    return render(
+        request,
+        "collection/site_basic_info_form.html",
+        {"site": site, "form": form},
     )
 
 

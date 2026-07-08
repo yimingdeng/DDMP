@@ -5,7 +5,7 @@ from core.models import SiteConfiguration
 from core.share_meta import build_share_meta
 from media_assets.selectors import decorate_with_media, public_media_prefetch
 
-from .models import DemoSite, Region
+from .models import DemoSite, GrowthStage, Region
 
 
 def site_list(request):
@@ -95,11 +95,28 @@ def site_detail(request, slug):
         .prefetch_related("observation__photos", "observation__videos")
     )
     latest_by_stage = {}
-    for snapshot in snapshots.order_by("observation__stage", "-version"):
+    for snapshot in snapshots.order_by("-version"):
         if snapshot.observation.stage not in latest_by_stage:
             form = ObservationForm(stage=snapshot.observation.stage, initial=snapshot.public_data)
             snapshot.display_rows = form.display_rows()
             latest_by_stage[snapshot.observation.stage] = snapshot
+    stage_rank = {stage: index for index, (stage, _label) in enumerate(GrowthStage.choices)}
+    published_observations = sorted(
+        latest_by_stage.values(),
+        key=lambda snapshot: stage_rank.get(snapshot.observation.stage, -1),
+        reverse=True,
+    )
+    for snapshot in published_observations:
+        snapshot.public_photos = [
+            photo
+            for photo in snapshot.observation.photos.all()
+            if photo.uploaded_at <= snapshot.published_at
+        ]
+        snapshot.public_videos = [
+            video
+            for video in snapshot.observation.videos.all()
+            if video.uploaded_at <= snapshot.published_at
+        ]
     return render(
         request,
         "sites/detail.html",
@@ -108,7 +125,7 @@ def site_detail(request, slug):
             "public_contacts": public_contacts,
             "gallery_images": site.gallery_images,
             "video_links": site.video_links,
-            "published_observations": latest_by_stage.values(),
+            "published_observations": published_observations,
             "share_meta": build_share_meta(
                 request,
                 title=f"{site.name}｜{site.variety.name}",

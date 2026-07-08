@@ -9,10 +9,12 @@ from django.test import override_settings
 from PIL import Image
 
 from core.models import PublicationStatus
+from media_assets.forms import MediaAssetAdminForm
 from media_assets.inlines import MediaAssetInlineFormSet
 from media_assets.models import MediaAsset, MediaType, VideoPlatform
 from media_assets.validators import MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, validate_mp4_upload
-from varieties.models import Variety
+from sites.models import DemoSite, Region
+from varieties.models import SellingPoint, Variety
 
 
 def make_variety(**overrides):
@@ -33,6 +35,14 @@ def image_upload(name="field.png", color=(50, 130, 70)):
     return SimpleUploadedFile(name, output.getvalue(), content_type="image/png")
 
 
+def mpo_upload(name="phone-photo.jpg"):
+    output = BytesIO()
+    first = Image.new("RGB", (120, 80), (50, 130, 70))
+    second = Image.new("RGB", (120, 80), (70, 90, 160))
+    first.save(output, format="MPO", save_all=True, append_images=[second])
+    return SimpleUploadedFile(name, output.getvalue(), content_type="image/jpeg")
+
+
 def mp4_upload(name="field.mp4"):
     payload = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"test-video-data"
     return SimpleUploadedFile(name, payload, content_type="video/mp4")
@@ -49,6 +59,142 @@ def media_for(target, **overrides):
     }
     data.update(overrides)
     return MediaAsset(**data)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("target_kind", ["variety", "selling_point", "demo_site"])
+def test_fe_media_001_inline_save_ignores_stale_generic_target_cache(tmp_path, target_kind):
+    variety = make_variety(name=f"媒体测试品种-{target_kind}", slug=f"media-{target_kind}")
+    targets = {
+        "variety": variety,
+        "selling_point": SellingPoint.objects.create(
+            variety=variety,
+            title="缓存测试卖点",
+            slug="cache-test-point",
+            status=PublicationStatus.DRAFT,
+        ),
+        "demo_site": DemoSite.objects.create(
+            name="缓存测试示范点",
+            slug="cache-test-site",
+            variety=variety,
+            region=Region.HUANG_HUAI_HAI,
+            province="河南省",
+            city="郑州市",
+            county="测试县",
+            status=PublicationStatus.DRAFT,
+        ),
+    }
+    target = targets[target_kind]
+    content_type = ContentType.objects.get_for_model(target)
+    media = MediaAsset(
+        media_type=MediaType.IMAGE,
+        image=image_upload(),
+        status=PublicationStatus.DRAFT,
+    )
+
+    # Generic inline validation may cache an empty target before Django assigns
+    # the parent content type and object ID in save_new().
+    assert media.target is None
+    media.content_type_id = content_type.pk
+    media.object_id = target.pk
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        media.save()
+
+    assert media.target == target
+
+
+@pytest.mark.django_db
+def test_fe_media_001_rejects_missing_target_despite_stale_valid_cache(tmp_path):
+    variety = make_variety()
+    media = media_for(variety, status=PublicationStatus.DRAFT)
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        media.save()
+        assert media.target == variety
+        media.object_id = variety.pk + 9999
+
+        with pytest.raises(ValidationError) as error:
+            media.save()
+
+    assert error.value.message_dict["object_id"] == ["关联对象不存在。"]
+
+
+@pytest.mark.django_db
+def test_fe_media_001_reassignment_refreshes_generic_target_cache(tmp_path):
+    first_variety = make_variety()
+    second_variety = make_variety(
+        name="第二个媒体测试品种",
+        slug="second-media-test-variety",
+    )
+    media = media_for(first_variety, status=PublicationStatus.DRAFT)
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        media.save()
+        assert media.target == first_variety
+        media.object_id = second_variety.pk
+        media.save()
+
+    assert media.target == second_variety
+
+
+@pytest.mark.django_db
+def test_fe_media_001_invalid_content_type_returns_validation_error(tmp_path):
+    media = MediaAsset(
+        content_type_id=999999,
+        object_id=1,
+        media_type=MediaType.IMAGE,
+        image=image_upload(),
+        status=PublicationStatus.DRAFT,
+    )
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        with pytest.raises(ValidationError) as error:
+            media.save()
+
+    assert "content_type" in error.value.message_dict
+
+
+@pytest.mark.django_db
+def test_fe_media_001_selling_point_inline_formset_saves_new_media(tmp_path):
+    variety = make_variety()
+    selling_point = SellingPoint.objects.create(
+        variety=variety,
+        title="后台内联卖点",
+        slug="admin-inline-point",
+        status=PublicationStatus.DRAFT,
+    )
+    formset_class = generic_inlineformset_factory(
+        MediaAsset,
+        formset=MediaAssetInlineFormSet,
+        fields=("media_type", "title", "image", "alt_text", "is_cover", "status"),
+        extra=1,
+    )
+    prefix = formset_class.get_default_prefix()
+    data = {
+        f"{prefix}-TOTAL_FORMS": "1",
+        f"{prefix}-INITIAL_FORMS": "0",
+        f"{prefix}-MIN_NUM_FORMS": "0",
+        f"{prefix}-MAX_NUM_FORMS": "1000",
+        f"{prefix}-0-media_type": MediaType.IMAGE,
+        f"{prefix}-0-title": "卖点田间图",
+        f"{prefix}-0-alt_text": "卖点田间表现",
+        f"{prefix}-0-status": PublicationStatus.DRAFT,
+    }
+    files = {f"{prefix}-0-image": image_upload("selling-point.png")}
+    formset = formset_class(
+        data=data,
+        files=files,
+        instance=selling_point,
+        prefix=prefix,
+    )
+
+    assert formset.is_valid(), formset.errors
+    with override_settings(MEDIA_ROOT=tmp_path):
+        saved_media = formset.save()
+
+    assert len(saved_media) == 1
+    assert saved_media[0].target == selling_point
 
 
 @pytest.mark.django_db
@@ -86,6 +232,19 @@ def test_invalid_or_oversized_image_is_rejected(tmp_path):
 
 
 @pytest.mark.django_db
+def test_fe_media_001_accepts_jpeg_compatible_mpo_phone_photo(tmp_path):
+    variety = make_variety()
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        media = media_for(variety, image=mpo_upload())
+        media.save()
+        media.refresh_from_db()
+
+    assert media.image.name.endswith(".jpg")
+    assert media.thumbnail.name.endswith(".webp")
+
+
+@pytest.mark.django_db
 def test_local_mp4_generates_metadata_and_renders_player(client, tmp_path):
     variety = make_variety()
 
@@ -113,6 +272,48 @@ def test_local_mp4_generates_metadata_and_renders_player(client, tmp_path):
         assert media.video_file.url in content
         assert media.thumbnail.url in content
         assert "本地田间视频" in content
+
+
+@pytest.mark.django_db
+def test_adm_media_003_local_video_form_clears_stale_link_fields(tmp_path):
+    variety = make_variety()
+    content_type = ContentType.objects.get_for_model(variety)
+    media = MediaAsset.objects.create(
+        content_type=content_type,
+        object_id=variety.pk,
+        media_type=MediaType.VIDEO_LINK,
+        title="原外部视频",
+        video_platform=VideoPlatform.WECHAT_CHANNELS,
+        video_url="https://weixin.qq.com/example",
+        status=PublicationStatus.DRAFT,
+    )
+    form = MediaAssetAdminForm(
+        data={
+            "content_type": content_type.pk,
+            "object_id": variety.pk,
+            "media_type": MediaType.LOCAL_VIDEO,
+            "title": "改为本地视频",
+            "description": "",
+            "alt_text": "",
+            "video_platform": VideoPlatform.WECHAT_CHANNELS,
+            "video_url": "",
+            "captured_at": "",
+            "sort_order": 100,
+            "status": PublicationStatus.DRAFT,
+        },
+        files={"video_file": mp4_upload("local-replacement.mp4")},
+        instance=media,
+    )
+
+    assert form.is_valid(), form.errors
+    with override_settings(MEDIA_ROOT=tmp_path):
+        saved_media = form.save()
+
+    assert saved_media.media_type == MediaType.LOCAL_VIDEO
+    assert saved_media.video_file.name.endswith(".mp4")
+    assert saved_media.video_platform == ""
+    assert saved_media.video_url == ""
+    assert not saved_media.image
 
 
 @pytest.mark.django_db

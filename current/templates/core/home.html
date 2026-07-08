@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block body_class %}home-page has-mobile-action-bar{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-pattern" aria-hidden="true"></div>
+    <div class="container hero-grid{% if hero_media %} has-featured-image{% endif %}">
+        <div class="field-visual{% if hero_media %} field-media{% endif %}" aria-label="{{ hero_media.alt_text|default:'抽象玉米田示意图' }}">
+            {% if hero_media %}
+                {% if hero_media.media_type == "local_video" %}
+                    <video class="hero-local-video" controls preload="metadata" playsinline poster="{{ hero_media.display_image.url }}" aria-label="播放视频：{{ hero_media.title|default:featured_variety.name }}">
+                        <source src="{{ hero_media.video_file.url }}" type="video/mp4">
+                        您的浏览器不支持 MP4 视频播放。
+                    </video>
+                {% elif hero_media.media_type == "video_link" %}
+                    <a class="hero-video-link" href="{{ hero_media.video_url }}" target="_blank" rel="noopener noreferrer" aria-label="播放视频：{{ hero_media.title|default:featured_variety.name }}">
+                        <img class="field-cover-image" src="{{ hero_media.display_image.url }}" alt="{{ hero_media.alt_text|default:hero_media.title }}" fetchpriority="high">
+                        <span class="hero-play-button" aria-hidden="true">▶</span>
+                    </a>
+                {% else %}
+                    <img class="field-cover-image" src="{{ hero_media.display_image.url }}" alt="{{ hero_media.alt_text }}" fetchpriority="high">
+                {% endif %}
+            {% else %}
+                <div class="sun"></div>
+                <div class="field-lines"></div>
+                <div class="corn corn-one"><span></span></div>
+                <div class="corn corn-two"><span></span></div>
+                <div class="corn corn-three"><span></span></div>
+            {% endif %}
+            {% if not hero_media %}
+                <div class="visual-label">
+                    <strong>真实田间表现</strong>
+                    <span>从播种到收获，持续沉淀示范数据</span>
+                </div>
+            {% endif %}
+        </div>
+        <div class="hero-copy">
+            <span class="eyebrow">重点玉米品种 · 数字示范展示</span>
+            {% if featured_variety %}
+                <h1>{{ featured_variety.name }}</h1>
+                <p>{{ featured_variety.positioning }}</p>
+            {% else %}
+                <h1>{{ site_config.hero_title }}</h1>
+                <p>{{ site_config.hero_subtitle }}</p>
+            {% endif %}
+            <div class="hero-actions">
+                <a class="button button-primary" href="{% url 'sites:list' %}">{{ site_config.primary_cta_label }}</a>
+                {% if featured_variety %}
+                    <a class="button button-secondary" href="{{ featured_variety.get_absolute_url }}">查看品种详情</a>
+                {% endif %}
+                <a class="button button-secondary" href="#regional-contacts">{{ site_config.secondary_cta_label }}</a>
+            </div>
+            <p class="release-note">真实示范 · 持续更新 · 服务区域客户</p>
+        </div>
+    </div>
+</section>
+
+<section class="platform-section" id="platform">
+    <div class="container">
+        <div class="section-heading">
+            {% if featured_variety %}
+                <span class="eyebrow dark">核心优势</span>
+                <h2>{{ featured_variety.positioning }}</h2>
+                <p>{{ featured_variety.summary }}</p>
+            {% else %}
+                <span class="eyebrow dark">平台能力</span>
+                <h2>让品种表现更直观，让客户连接更顺畅</h2>
+                <p>展示端先行，随后逐步接入示范点采集、内容审核和客户线索管理。</p>
+            {% endif %}
+        </div>
+        <div class="feature-grid">
+            {% if featured_variety and featured_variety.public_selling_points %}
+                {% for point in featured_variety.public_selling_points|slice:":5" %}
+                    <article class="feature-card">
+                        {% if point.cover_media %}<img class="card-cover" src="{{ point.cover_media.display_image.url }}" alt="{{ point.cover_media.alt_text }}">{% endif %}
+                        <span class="feature-number">0{{ forloop.counter }}</span>
+                        <h3>{{ point.title }}</h3>
+                        <p>{{ point.short_description }}</p>
+                        <a class="text-link" href="{{ point.get_absolute_url }}">了解详情 →</a>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <article class="feature-card">
+                    <span class="feature-number">01</span>
+                    <h3>品种展示</h3>
+                    <p>聚合品种特征、核心卖点、田间图片与视频内容。</p>
+                </article>
+                <article class="feature-card">
+                    <span class="feature-number">02</span>
+                    <h3>示范点动态</h3>
+                    <p>按区域查看示范点，从播种到收获逐步形成成长记录。</p>
+                </article>
+                <article class="feature-card">
+                    <span class="feature-number">03</span>
+                    <h3>客户服务</h3>
+                    <p>承接咨询、看田和试种意向，连接区域服务人员。</p>
+                </article>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="coming-section" id="coming-soon">
+    <div class="container coming-card">
+        <div>
+            {% if featured_variety and featured_variety.featured_demo_sites %}
+                <span class="eyebrow dark">示范点动态</span>
+                <h2>田间表现，来自真实示范现场</h2>
+                <p>查看不同区域的种植信息、当前阶段与主要表现。</p>
+                <div class="mini-site-list">
+                    {% for site in featured_variety.featured_demo_sites|slice:":3" %}
+                        <a href="{{ site.get_absolute_url }}">
+                            {% if site.cover_media %}<img src="{{ site.cover_media.display_image.url }}" alt="{{ site.cover_media.alt_text }}">{% endif %}
+                            <strong>{{ site.name }}</strong>
+                            <span>{{ site.public_location }} · {{ site.get_current_stage_display|default:"持续更新" }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <span class="eyebrow dark">持续建设中</span>
+                <h2>首批重点品种和示范点内容即将上线</h2>
+                <p>后台已可录入品种、核心卖点和示范点，发布后将自动出现在这里。</p>
+            {% endif %}
+        </div>
+        <a class="status-pill" href="{% url 'sites:list' %}"><i></i> 查看全部示范点</a>
+    </div>
+</section>
+
+{% url 'sites:list' as sites_url %}
+{% if featured_variety %}
+    {% include "components/mobile_action_bar.html" with first_url=featured_variety.get_absolute_url first_label="看详情" first_icon="▦" third_url=sites_url third_label="看示范" only %}
+{% else %}
+    {% include "components/mobile_action_bar.html" with first_url="#platform" first_label="平台介绍" first_icon="▦" third_url=sites_url third_label="看示范" only %}
+{% endif %}
+{% endblock %}

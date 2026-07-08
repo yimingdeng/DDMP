@@ -14,7 +14,10 @@
             <h2>{{ site.name }}</h2>
             <p>{{ site.variety.name }} · 当前阶段：{{ site.get_current_stage_display|default:"未设置" }}</p>
             <div class="stage-dots" aria-label="七阶段进度">{% for item in site.collection_progress %}<i class="{% if item.is_done %}done{% elif item.is_rejected %}rejected{% elif item.record %}draft{% endif %}" title="{{ item.label }}"></i>{% endfor %}</div>
-            <a class="primary-button" href="{% url 'collection:site-tasks' site.pk %}">进入采集</a>
+            <div class="site-card-actions">
+                <a class="primary-button" href="{% url 'collection:site-tasks' site.pk %}">进入采集</a>
+                <a class="secondary-button" href="{% url 'collection:edit-site-basic-info' site.pk %}">编辑信息</a>
+            </div>
         </article>
     {% empty %}
         <div class="empty-state"><h2>暂未分配示范点</h2><p>请联系管理员在后台为当前账号绑定示范点。</p></div>

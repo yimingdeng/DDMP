@@ -2,6 +2,7 @@ from django.contrib.contenttypes.admin import GenericStackedInline
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
 from django.core.exceptions import ValidationError
 
+from .forms import MediaAssetAdminForm
 from .models import MediaAsset
 
 
@@ -30,6 +31,7 @@ class MediaAssetInlineFormSet(BaseGenericInlineFormSet):
 
 class MediaAssetInline(GenericStackedInline):
     model = MediaAsset
+    form = MediaAssetAdminForm
     formset = MediaAssetInlineFormSet
     extra = 0
     fields = (

@@ -1,5 +1,6 @@
 import pytest
 from django.conf import settings
+from django.contrib import admin
 from django.urls import reverse
 
 from core.models import PublicationStatus, SiteConfiguration
@@ -58,6 +59,35 @@ def test_site_list_filters_by_region(client, published_variety):
     assert response.status_code == 200
     assert "西南示范点" in content
     assert "河南示范点" not in content
+
+
+@pytest.mark.django_db
+def test_fe_site_001_public_list_uses_admin_display_order(client, published_variety):
+    later_site = make_site(
+        published_variety,
+        name="排序靠后示范点",
+        slug="later-display-site",
+        sort_order=200,
+    )
+    earlier_site = make_site(
+        published_variety,
+        name="排序靠前示范点",
+        slug="earlier-display-site",
+        sort_order=10,
+    )
+
+    response = client.get(reverse("sites:list"))
+    content = response.content.decode()
+
+    assert content.index(earlier_site.name) < content.index(later_site.name)
+
+
+def test_adm_site_001_order_is_editable_from_admin_list():
+    site_admin = admin.site._registry[DemoSite]
+
+    assert "sort_order" in site_admin.list_display
+    assert site_admin.list_editable == ("sort_order",)
+    assert site_admin.ordering[:1] == ("sort_order",)
 
 
 @pytest.mark.django_db
