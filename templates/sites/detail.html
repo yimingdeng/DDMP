@@ -61,15 +61,21 @@
                             <div class="public-field-photos" data-media-gallery>
                                 {% for photo in snapshot.public_photos %}
                                     <a href="{{ photo.image.url }}" data-gallery-item data-caption="{{ photo.caption|default:snapshot.observation.get_stage_display }}">
-                                        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:snapshot.observation.get_stage_display }}现场照片" loading="lazy">
+                                        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:snapshot.observation.get_stage_display }}现场照片" loading="{% if forloop.parentloop.first and forloop.first %}eager{% else %}lazy{% endif %}" decoding="async">
                                     </a>
                                 {% endfor %}
                             </div>
                         {% endif %}
                         {% for video in snapshot.public_videos %}
-                            <video class="public-field-video" controls playsinline preload="metadata" src="{{ video.video.url }}"></video>
+                            <video class="public-field-video" controls playsinline preload="metadata" data-video-maximize src="{{ video.video.url }}"></video>
                         {% endfor %}
+                        {% if snapshot.key_display_rows %}
+                            <dl class="key-metric-grid">
+                                {% for label, value in snapshot.key_display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+                            </dl>
+                        {% endif %}
                         {% if snapshot.public_summary %}<p class="public-observation-summary">{{ snapshot.public_summary }}</p>{% endif %}
+                        <a class="stage-detail-link" href="{% url 'sites:stage-detail' site.slug snapshot.observation.stage %}">查看并分享本阶段表现 →</a>
                         {% if snapshot.display_rows %}
                             <dl class="data-grid public-observation-data">
                                 {% for label, value in snapshot.display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}

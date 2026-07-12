@@ -109,7 +109,7 @@ def test_variety_detail_prioritizes_mobile_selling_points_and_actions(client):
     assert "联系销售" not in content
     assert "种植风险提示" in content
     assert "绝不能公开的品种备注" not in content
-    assert "site.css?v=20260707-6" in content
+    assert "site.css?v=20260709-3" in content
     site_css = (settings.BASE_DIR / "static/css/site.css").read_text(encoding="utf-8")
     assert "grid-template-columns: 108px minmax(0, 1fr);" in site_css
     assert ".variety-selling-points .section-heading.compact h2" in site_css

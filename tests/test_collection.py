@@ -10,6 +10,7 @@ from django.test import override_settings
 from django.urls import reverse
 from PIL import Image
 
+from collection.forms import ObservationForm
 from collection.models import (
     AnomalyReport,
     CollectionEvent,
@@ -81,9 +82,12 @@ def test_collection_reviewer_role_clears_irrelevant_region():
 @pytest.mark.django_db
 def test_collection_login_has_return_to_public_home(client):
     response = client.get(reverse("collection:login"))
+    content = response.content.decode()
     assert response.status_code == 200
-    assert f'href="{reverse("core:home")}"' in response.content.decode()
-    assert "返回展示首页" in response.content.decode()
+    assert f'href="{reverse("core:home")}"' in content
+    assert "返回展示首页" in content
+    assert "第二阶段" not in content
+    assert "负责人端" not in content
 
 
 @pytest.mark.django_db
@@ -98,12 +102,58 @@ def test_my_demo_landing_allows_application_without_login(client):
 
 
 @pytest.mark.django_db
+def test_demo_application_form_generates_site_name_after_address_fields(client):
+    Variety.objects.create(
+        name="申请表品种",
+        slug="application-form-variety",
+        positioning="申请表定位",
+        summary="申请表简介",
+        status=PublicationStatus.PUBLISHED,
+    )
+
+    response = client.get(reverse("collection:create-demo-application"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.index('name="detailed_address"') < content.index('name="proposed_site_name"')
+    assert "默认按“区县 + 乡镇/村”自动生成，也可以手动修改。" in content
+    assert "demo-application-form.js?v=20260712-1" in content
+
+
+@pytest.mark.django_db
 def test_login_remembers_username_and_allows_secure_password_autofill(client):
     response = client.get(reverse("collection:login"))
     content = response.content.decode()
     assert 'autocomplete="username"' in content
     assert 'autocomplete="current-password"' in content
     assert "collection-login.js" in content
+
+
+@pytest.mark.django_db
+def test_collection_logout_returns_to_entry_specific_page(client):
+    direct_user = get_user_model().objects.create_user("collection-direct", password="123456")
+    client.get(reverse("collection:login"))
+    client.post(
+        reverse("collection:login"),
+        {"username": direct_user.username, "password": "123456", "next": ""},
+    )
+
+    direct_logout = client.post(reverse("collection:logout"))
+
+    assert direct_logout.status_code == 302
+    assert direct_logout.url == reverse("collection:login")
+
+    home_user = get_user_model().objects.create_user("collection-home", password="123456")
+    client.get(f"{reverse('collection:landing')}?entry=home")
+    client.post(
+        reverse("collection:login"),
+        {"username": home_user.username, "password": "123456", "next": ""},
+    )
+
+    home_logout = client.post(reverse("collection:logout"))
+
+    assert home_logout.status_code == 302
+    assert home_logout.url == reverse("core:home")
 
 
 @pytest.mark.django_db
@@ -276,6 +326,32 @@ def test_collector_can_save_incomplete_draft_without_photo(client):
     assert observation.status == CollectionStatus.DRAFT
     assert observation.data == {"method": "mechanical"}
     assert CollectionEvent.objects.get().action == CollectionStatus.DRAFT
+
+
+def test_col_std_001_maturity_auto_calculates_lodging_and_disease_levels():
+    form = ObservationForm(
+        stage="maturity",
+        submitting=False,
+        data={
+            "event_date": "2026-09-10",
+            "plant_height": "260",
+            "ear_height": "105",
+            "lodging_rate": "8",
+            "ear_rot_rate": "4",
+            "stay_green": "good",
+            "dehydration": "fast",
+            "ear_quality": "excellent",
+        },
+    )
+
+    assert form.is_valid(), form.errors
+    data = form.observation_data()
+    assert data["lodging_level"] == "medium"
+    assert data["disease_pressure"] == "medium"
+
+    display = ObservationForm(stage="maturity", initial=data).key_display_rows()
+    assert ("倒伏等级（可自动计算）", "中等倒伏") in display
+    assert ("病害压力（可自动计算）", "中等") in display
 
 
 @pytest.mark.django_db
@@ -746,6 +822,41 @@ def test_user_can_submit_demo_application(client):
     application = DemoApplication.objects.get(applicant__isnull=True)
     assert application.status == DemoApplicationStatus.PENDING
     assert response.url == reverse("collection:login")
+
+
+@pytest.mark.django_db
+def test_demo_application_defaults_site_name_from_county_and_township(client):
+    variety = Variety.objects.create(
+        name="自动命名示范品种",
+        slug="auto-name-application-variety",
+        positioning="自动命名定位",
+        summary="自动命名简介",
+        status=PublicationStatus.PUBLISHED,
+    )
+
+    response = client.post(
+        reverse("collection:create-demo-application"),
+        {
+            "applicant_name": "张三",
+            "phone": "13800000003",
+            "variety": variety.pk,
+            "proposed_site_name": "",
+            "region": Region.HUANG_HUAI_HAI,
+            "province": "河南省",
+            "city": "郑州市",
+            "county": "荥阳市",
+            "township_village": "高村乡后侯村",
+            "detailed_address": "1 号地块",
+            "proposed_area_mu": "20",
+            "planned_sowing_date": "2027-06-01",
+            "planting_experience": "first",
+            "request_note": "",
+        },
+    )
+
+    assert response.status_code == 302
+    application = DemoApplication.objects.get(phone="13800000003")
+    assert application.proposed_site_name == "荥阳市高村乡后侯村"
 
 
 @pytest.mark.django_db

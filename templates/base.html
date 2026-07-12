@@ -15,9 +15,9 @@
     <meta name="twitter:description" content="{{ share_meta.description }}">
     {% if share_meta.image_url %}<meta name="twitter:image" content="{{ share_meta.image_url }}">{% endif %}
     <link rel="canonical" href="{{ share_meta.url }}">
-    <meta name="theme-color" content="#174b2a">
+    <meta name="theme-color" content="{{ site_config.theme_color }}">
     <title>{% block title %}{{ site_config.site_name }}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260707-6">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260709-3">
     {% block extra_head %}{% endblock %}
     <script src="{% static 'js/gallery.js' %}" defer></script>
     <script src="{% static 'js/site.js' %}?v=20260708-1" defer></script>
@@ -78,7 +78,8 @@
                 <span class="muted">联系方式将在后台配置后展示</span>
             {% endif %}
             <a class="privacy-link" href="{% url 'core:privacy' %}">隐私说明</a>
-            <a class="privacy-link" href="{% url 'collection:landing' %}">我的示范</a>
+            <a class="privacy-link" href="{% url 'collection:landing' %}?entry=home">我的示范</a>
+            <a class="privacy-link" href="{% url 'marketing:dashboard' %}?entry=home">我要发布</a>
         </div>
     </footer>
 

@@ -14,7 +14,19 @@
 8. [Sprint 3 实施记录](./08-sprint-3-implementation.md)
 9. [区域联系人与咨询线索实施记录](./09-regional-contacts-and-inquiries.md)
 10. [Sprint 4：传播和留资实施记录](./10-sprint-4-sharing-and-leads.md)
-11. [DDMP 迁移到第二台开发机与双机开发](./18-two-machine-development-migration.md)
+11. [Sprint 5：抖音适配、线索和统计](./11-sprint-5-douyin-leads-and-analytics.md)
+12. [Sprint 7–9：负责人田间采集](./12-sprint-7-9-field-collection.md)
+13. [Sprint 10–11：异常、审核与公开](./13-sprint-10-11-anomaly-review-publish.md)
+14. [示范点地图和列表](./14-site-map-and-list.md)
+15. [示范申请](./15-demo-application.md)
+16. [代码和数据迁移](./16-code-and-data-migration.md)
+17. [微信发布测试](./17-wechat-publishing-test.md)
+18. [迁移到第二台开发机与双机开发](./18-two-machine-development-migration.md)
+19. [Sprint 12–14：营销素材、传播追踪与线索回流](./19-sprint-12-14-marketing-publishing-and-attribution.md)
+20. [Sprint 15：营销发布中心和一键转发包](./20-sprint-15-marketing-publishing-center.md)
+21. [Sprint 16–18：外部发布、营销看板与运营周报](./21-sprint-16-18-marketing-operations.md)
+22. [Sprint 19：内容生产能力增强](./22-sprint-19-content-production.md)
+23. [Sprint 20：采集数据标准化与移动展示优化](./23-sprint-20-field-data-and-mobile-display.md)
 
 ## 当前决策摘要
 

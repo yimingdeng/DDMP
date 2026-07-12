@@ -1,8 +1,19 @@
+from io import BytesIO
+
 import pytest
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 
+from collection.models import (
+    CollectionStatus,
+    Observation,
+    ObservationPhoto,
+    PublishedObservation,
+)
 from core.models import PublicationStatus, SiteConfiguration
 from sites.models import Contact, DemoSite, Region, VisitingStatus
 from varieties.models import Variety
@@ -40,6 +51,12 @@ def make_site(variety, **overrides):
     }
     data.update(overrides)
     return DemoSite.objects.create(**data)
+
+
+def site_image_upload(name="site-stage.jpg"):
+    output = BytesIO()
+    Image.new("RGB", (160, 120), "#4d955a").save(output, "JPEG")
+    return SimpleUploadedFile(name, output.getvalue(), content_type="image/jpeg")
 
 
 @pytest.mark.django_db
@@ -80,6 +97,59 @@ def test_fe_site_001_public_list_uses_admin_display_order(client, published_vari
     content = response.content.decode()
 
     assert content.index(earlier_site.name) < content.index(later_site.name)
+
+
+@pytest.mark.django_db
+def test_fe_site_005_defaults_to_distance_sorting_without_public_sort_buttons(
+    client, published_variety
+):
+    hot_site = make_site(
+        published_variety,
+        name="热门示范点",
+        slug="hot-display-site",
+        latitude="34.746600",
+        longitude="113.625400",
+        sort_order=200,
+    )
+    make_site(
+        published_variety,
+        name="最近示范点",
+        slug="near-display-site",
+        latitude="34.750000",
+        longitude="113.620000",
+        sort_order=100,
+    )
+    user = get_user_model().objects.create_user("site-heat-user")
+    for index in range(2):
+        observation = Observation.objects.create(
+            site=hot_site,
+            stage=("emergence", "maturity")[index],
+            status=CollectionStatus.PUBLISHED,
+            data={},
+            created_by=user,
+            updated_by=user,
+        )
+        PublishedObservation.objects.create(
+            observation=observation,
+            version=1,
+            public_data={},
+            public_summary="热度测试",
+            published_by=user,
+        )
+
+    distance_response = client.get(
+        reverse("sites:list"),
+        {"lat": "34.750100", "lng": "113.620100"},
+    )
+    distance_content = distance_response.content.decode()
+    assert distance_response.context["selected_sort"] == "distance"
+    assert distance_response.context["has_distance_location"] is True
+    assert distance_content.index("最近示范点") < distance_content.index("热门示范点")
+    assert "距您约" in distance_content
+    assert "data-distance-sort-url" in distance_content
+    assert "默认排序" not in distance_content
+    assert "按热度" not in distance_content
+    assert "按距离" not in distance_content
 
 
 def test_adm_site_001_order_is_editable_from_admin_list():
@@ -210,7 +280,7 @@ def test_fe_site_004_supports_pin_map_and_corrected_nearest_location(client, pub
     assert "正在获取您的位置，为您查找最近的示范点" in content
     assert 'id="site-map"' in content
     assert "site-map.js" in content
-    assert "site-map.js?v=20260705-4" in content
+    assert "site-map.js?v=20260709-2" in content
     assert "test-amap-key" in content
     assert "test-security-code" in content
     assert "leaflet" not in content.lower()
@@ -222,10 +292,18 @@ def test_fe_site_004_supports_pin_map_and_corrected_nearest_location(client, pub
         settings.BASE_DIR / "static/js/site-map.js"
     ).read_text(encoding="utf-8")
     map_script = (settings.BASE_DIR / "static/js/site-map.js").read_text(encoding="utf-8")
+    assert "function autoApplyDistanceSort()" in map_script
+    assert "window.location.replace(url.toString())" in map_script
+    assert "data-distance-sort-url" in content
+    assert "默认排序" not in content
+    assert "按热度" not in content
+    assert "按距离" not in content
     assert 'AMap.convertFrom([longitude, latitude], "gps"' in map_script
     assert "const marker = new AMap.Marker({" in map_script
     assert "createMarkerContent" not in map_script
     assert "title.textContent = `${site.name}${distanceText}`" in map_script
+    assert 'popup.className = "site-map-popup"' in map_script
+    assert "meta.textContent = site.stage ? `${site.stage} · 热度 ${site.heat || 0}`" in map_script
     assert 'link.textContent = "查看详情"' in map_script
     assert "site.location" not in map_script
     assert "desktopProvinceZoom + Math.log2(mapWidth / desktopMapWidth)" in map_script
@@ -253,3 +331,41 @@ def test_site_without_coordinates_remains_in_list_with_map_notice(client, publis
 
     assert "河南示范点" in content
     assert "尚未配置经纬度" in content
+
+
+@pytest.mark.django_db
+def test_fe_site_006_list_card_prefers_latest_stage_photo(client, published_variety):
+    user = get_user_model().objects.create_user("stage-photo-site-user")
+    site = make_site(published_variety, name="阶段照片示范点", slug="stage-photo-card-site")
+    observation = Observation.objects.create(
+        site=site,
+        stage="maturity",
+        status=CollectionStatus.PUBLISHED,
+        data={"lodging_rate": "1.2", "lodging_level": "light"},
+        created_by=user,
+        updated_by=user,
+    )
+    photo = ObservationPhoto.objects.create(
+        observation=observation,
+        image=site_image_upload("stage-card.jpg"),
+        caption="成熟期阶段照片",
+        uploaded_by=user,
+    )
+    PublishedObservation.objects.create(
+        observation=observation,
+        version=1,
+        public_data=observation.data,
+        public_summary="成熟期照片优先展示",
+        published_by=user,
+    )
+
+    response = client.get(reverse("sites:list"))
+    content = response.content.decode()
+
+    assert photo.image.url in content
+    assert "成熟期阶段照片" in content
+    assert "1 个阶段" in content
+
+    detail = client.get(site.get_absolute_url()).content.decode()
+    assert "key-metric-grid" in detail
+    assert "轻微倒伏" in detail

@@ -16,11 +16,26 @@ from .models import VisitEvent
 @admin.register(VisitEvent)
 class VisitEventAdmin(admin.ModelAdmin):
     change_list_template = "admin/analytics/visitevent/change_list.html"
-    list_display = ("occurred_at", "path", "source_code", "visitor_short")
-    list_filter = ("source_code", "occurred_at")
+    list_display = (
+        "occurred_at",
+        "path",
+        "source_code",
+        "marketing_package",
+        "promotion_identity",
+        "visitor_short",
+    )
+    list_filter = ("source_code", "promotion_identity__promoter_type", "occurred_at")
     search_fields = ("path", "source_code")
     date_hierarchy = "occurred_at"
-    readonly_fields = ("occurred_at", "path", "source_code", "visitor_hash")
+    readonly_fields = (
+        "occurred_at",
+        "path",
+        "source_code",
+        "visitor_hash",
+        "marketing_package",
+        "promotion_identity",
+        "tracked_link",
+    )
 
     @admin.display(description="匿名访客")
     def visitor_short(self, obj):

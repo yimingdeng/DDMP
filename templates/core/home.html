@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block body_class %}home-page has-mobile-action-bar{% endblock %}
+{% block body_class %}{{ site_config.theme_css_class }} home-page has-mobile-action-bar{% endblock %}
 
 {% block content %}
 <section class="hero">
@@ -9,7 +9,7 @@
         <div class="field-visual{% if hero_media %} field-media{% endif %}" aria-label="{{ hero_media.alt_text|default:'抽象玉米田示意图' }}">
             {% if hero_media %}
                 {% if hero_media.media_type == "local_video" %}
-                    <video class="hero-local-video" controls preload="metadata" playsinline poster="{{ hero_media.display_image.url }}" aria-label="播放视频：{{ hero_media.title|default:featured_variety.name }}">
+                    <video class="hero-local-video" controls preload="metadata" playsinline data-video-maximize poster="{{ hero_media.display_image.url }}" aria-label="播放视频：{{ hero_media.title|default:featured_variety.name }}">
                         <source src="{{ hero_media.video_file.url }}" type="video/mp4">
                         您的浏览器不支持 MP4 视频播放。
                     </video>

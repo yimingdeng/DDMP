@@ -1,0 +1,20 @@
+{% extends "campaigns/portal_base.html" %}
+
+{% block title %}营销发布中心登录{% endblock %}
+
+{% block content %}
+<section class="marketing-login-card">
+    <span>营销发布中心</span>
+    <h1>我要发布登录</h1>
+    <p>请使用已开通营销发布权限的销售、经销商、示范负责人或管理员账号登录。登录后可生成海报、文案、二维码和一键营销素材。</p>
+    {% if form.errors %}<div class="marketing-login-error">用户名或密码不正确，请重新输入。</div>{% endif %}
+    <form method="post" class="marketing-login-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <label><span>用户名</span>{{ form.username }}</label>
+        <label><span>密码</span>{{ form.password }}</label>
+        <button class="marketing-button primary" type="submit">登录营销中心</button>
+    </form>
+    <p class="marketing-login-note">如果登录后提示无权限，请联系管理员为账号开通营销发布权限或绑定推广身份。</p>
+</section>
+{% endblock %}

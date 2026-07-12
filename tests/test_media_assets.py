@@ -269,6 +269,7 @@ def test_local_mp4_generates_metadata_and_renders_player(client, tmp_path):
         response = client.get(variety.get_absolute_url())
         content = response.content.decode()
         assert '<video controls preload="metadata" playsinline' in content
+        assert "data-video-maximize" in content
         assert media.video_file.url in content
         assert media.thumbnail.url in content
         assert "本地田间视频" in content

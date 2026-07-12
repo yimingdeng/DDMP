@@ -16,20 +16,25 @@
                 <button type="button" class="active" data-site-view="map" aria-pressed="true">地图</button>
             </div>
         </div>
+        <div id="site-distance-sort" data-distance-sort-url="?region={{ selected_region }}&province={{ selected_province }}" data-has-location="{% if has_distance_location %}1{% else %}0{% endif %}" hidden></div>
 
         <div class="site-list-view" data-site-panel="list" hidden>
         <div class="site-card-grid">
             {% for site in sites %}
                 <a class="site-card" href="{{ site.get_absolute_url }}">
-                    <div class="site-card-visual{% if site.cover_media %} has-cover{% endif %}">
-                        {% if site.cover_media %}<img src="{{ site.cover_media.display_image.url }}" alt="{{ site.cover_media.alt_text }}" loading="lazy">{% endif %}
+                    <div class="site-card-visual{% if site.primary_card_image_url %} has-cover{% endif %}">
+                        {% if site.primary_card_image_url %}<img src="{{ site.primary_card_image_url }}" alt="{{ site.primary_card_image_alt }}" loading="lazy" decoding="async">{% endif %}
                         <span>{{ site.get_region_display }}</span>
                         <strong>{{ site.get_current_stage_display|default:"持续更新" }}</strong>
                     </div>
                     <div class="site-card-body">
-                        <div class="site-meta">{{ site.public_location }}</div>
+                        <div class="site-meta">{{ site.public_location }}{% if site.distance_km %} · 距您约 {{ site.distance_km|floatformat:1 }} 公里{% endif %}</div>
                         <h2>{{ site.name }}</h2>
                         <p>{{ site.main_performance }}</p>
+                        <div class="site-card-stats">
+                            <span>{{ site.published_stage_count }} 个阶段</span>
+                            <span>热度 {{ site.heat_score }}</span>
+                        </div>
                         <span class="visit-state state-{{ site.visiting_status }}">{{ site.get_visiting_status_display }}</span>
                     </div>
                 </a>
@@ -58,4 +63,4 @@
 {% endif %}
 {% endblock %}
 
-{% block extra_scripts %}{% load static %}<script src="{% static 'js/site-map.js' %}?v=20260705-4" defer></script>{% endblock %}
+{% block extra_scripts %}{% load static %}<script src="{% static 'js/site-map.js' %}?v=20260709-2" defer></script>{% endblock %}

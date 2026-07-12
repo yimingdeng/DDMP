@@ -1,0 +1,33 @@
+{% extends "campaigns/portal_base.html" %}
+{% block title %}营销发布中心{% endblock %}
+{% block content %}
+<section class="marketing-heading">
+    <span>示范表现传播</span>
+    <h1>一键营销</h1>
+    <p>{% if promotion_identity %}当前推广身份：{{ promotion_identity.name }} · {{ promotion_identity.get_promoter_type_display }}{% else %}筛选已经生成的营销素材，准备渠道链接和完整转发包。{% endif %}</p>
+</section>
+<form class="marketing-filters" method="get">
+    <label><span>搜索</span><input type="search" name="q" value="{{ query }}" placeholder="品种或示范点"></label>
+    <label><span>阶段</span><select name="stage"><option value="">全部阶段</option>{% for value, label in stages %}<option value="{{ value }}"{% if selected_stage == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label><span>区域</span><select name="region"><option value="">全部区域</option>{% for value, label in regions %}<option value="{{ value }}"{% if selected_region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    {% if perms.campaigns.change_marketingpackage %}<label><span>状态</span><select name="status"><option value="">全部状态</option>{% for value, label in statuses %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
+    <button type="submit">筛选</button>
+</form>
+<div class="marketing-grid">
+    {% for package in packages %}
+        <article class="marketing-card">
+            <a class="marketing-card-media" href="{% url 'marketing:package-detail' package.public_token %}">
+                {% if package.poster %}<img src="{{ package.poster.url }}" alt="{{ package.headline }}海报" loading="lazy">{% else %}<span>待生成海报</span>{% endif %}
+            </a>
+            <div class="marketing-card-body">
+                <div class="marketing-meta"><span>{{ package.observation.get_stage_display }}</span><em class="status {{ package.status }}">{{ package.get_status_display }}</em></div>
+                <h2>{{ package.observation.site.variety.name }}</h2>
+                <p>{{ package.observation.site.name }}</p>
+                <a class="marketing-button primary" href="{% url 'marketing:package-detail' package.public_token %}">打开转发包</a>
+            </div>
+        </article>
+    {% empty %}
+        <div class="marketing-empty"><h2>暂无可用素材</h2><p>请检查筛选条件，或等待管理员审核营销素材。</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

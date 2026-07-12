@@ -1,0 +1,129 @@
+{% extends "campaigns/portal_base.html" %}
+{% block title %}{{ package.headline }}{% endblock %}
+{% block content %}
+<a class="marketing-back" href="{% url 'marketing:dashboard' %}">← 返回素材列表</a>
+<section class="package-heading">
+    <div>
+        <span>{{ observation.site.province }} {{ observation.site.city }} · {{ observation.get_stage_display }}</span>
+        <h1>{{ observation.site.variety.name }}</h1>
+        <p>{{ observation.site.name }} · {{ package.headline }}</p>
+    </div>
+    <em class="status {{ package.status }}">{{ package.get_status_display }}</em>
+</section>
+
+{% if not can_publish %}<div class="package-warning">该素材目前为“{{ package.get_status_display }}”，可以内部预览，但必须由管理员审核为“可发布”后才能生成对外链接。</div>{% endif %}
+
+<section class="package-section">
+    <h2>第一步：准备专属传播链接</h2>
+    <form class="link-form" method="post" action="{% url 'marketing:prepare-link' package.public_token %}">
+        {% csrf_token %}
+        <label><span>{{ link_form.channel.label }}</span>{{ link_form.channel }}</label>
+        {% if link_form.can_choose_promoter %}<label><span>{{ link_form.promoter.label }}</span>{{ link_form.promoter }}</label>{% else %}{{ link_form.promoter }}{% endif %}
+        <button class="marketing-button primary" type="submit"{% if not can_publish %} disabled{% endif %}>生成专属链接和二维码</button>
+    </form>
+    {% if selected_link %}
+        <div class="prepared-link">
+            <div><span>{{ channel_label }}{% if selected_link.promoter %} · {{ selected_link.promoter.name }}{% endif %}</span><strong id="share-url">{{ share_url }}</strong></div>
+            <button class="marketing-button" type="button" data-copy-target="share-url">复制链接</button>
+            <img src="{% url 'marketing:tracked-link-qr' selected_link.token %}" alt="专属传播二维码">
+            <a class="marketing-button primary" href="{% url 'marketing:download-package' package.public_token %}?link={{ selected_link.token }}">下载完整转发包 ZIP</a>
+        </div>
+    {% endif %}
+</section>
+
+<section class="package-section">
+    <h2>第二步：选择和复制发布文案</h2>
+    <div class="copy-grid">
+        <article class="copy-card"><h3>朋友圈文案</h3><textarea id="wechat-moments-copy" readonly>{{ package.wechat_moments_copy }}</textarea><button type="button" data-copy-target="wechat-moments-copy">复制朋友圈文案</button></article>
+        <article class="copy-card"><h3>客户私聊文案</h3><textarea id="customer-private-copy" readonly>{{ package.customer_private_copy }}</textarea><button type="button" data-copy-target="customer-private-copy">复制客户私聊文案</button></article>
+        <article class="copy-card"><h3>微信群文案</h3><textarea id="wechat-group-copy" readonly>{{ package.wechat_group_copy }}</textarea><button type="button" data-copy-target="wechat-group-copy">复制微信群文案</button></article>
+        <article class="copy-card"><h3>视频号标题与文案</h3><textarea id="wechat-channels-copy" readonly>{{ package.wechat_channels_title }}
+
+{{ package.wechat_channels_copy }}</textarea><button type="button" data-copy-target="wechat-channels-copy">复制视频号文案</button></article>
+        <article class="copy-card"><h3>抖音标题与话题</h3><textarea id="douyin-copy" readonly>{{ package.douyin_title }}
+
+{{ package.douyin_topics }}</textarea><button type="button" data-copy-target="douyin-copy">复制抖音文案</button></article>
+        <article class="copy-card"><h3>短视频脚本</h3><textarea id="video-script" readonly>{{ package.short_video_script }}</textarea><button type="button" data-copy-target="video-script">复制短视频脚本</button></article>
+    </div>
+</section>
+
+<section class="package-section">
+    <h2>第三步：短视频选题拆分</h2>
+    <p class="section-note">每条视频只讲一个重点，适合视频号、抖音和销售朋友圈连续发布。</p>
+    <div class="topic-list">
+        {% for topic in short_video_topics %}
+            <article class="topic-card">
+                <span>选题 {{ forloop.counter }}</span>
+                <h3>{{ topic.title }}</h3>
+                <p>重点：{{ topic.focus }}</p>
+                <textarea id="topic-script-{{ topic.pk }}" readonly>{{ topic.script }}</textarea>
+                <button type="button" data-copy-target="topic-script-{{ topic.pk }}">复制脚本</button>
+            </article>
+        {% empty %}
+            <p>暂无短视频选题，可在后台“短视频选题”中补充。</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="package-section">
+    <h2>第四步：下载图片素材</h2>
+    <div class="asset-grid">
+        <article>{% if package.poster %}<img src="{{ package.poster.url }}" alt="朋友圈海报"><a class="marketing-button" href="{{ package.poster.url }}" download>保存朋友圈海报</a>{% else %}<p>朋友圈海报尚未生成。</p>{% endif %}</article>
+        <article>{% if package.video_cover %}<img src="{{ package.video_cover.url }}" alt="短视频封面"><a class="marketing-button" href="{{ package.video_cover.url }}" download>保存短视频封面</a>{% else %}<p>短视频封面尚未生成。</p>{% endif %}</article>
+    </div>
+</section>
+
+<section class="package-section">
+    <h2>第五步：选择海报模板</h2>
+    <p class="section-note">除默认朋友圈海报外，系统会自动准备看田邀请、本周重点推荐等模板；生成专属链接后会出现经销商/推广人专属海报。</p>
+    <div class="poster-variant-grid">
+        {% for variant in poster_variants %}
+            <article>
+                {% if variant.image %}<img src="{{ variant.image.url }}" alt="{{ variant.get_variant_type_display }}">{% endif %}
+                <strong>{{ variant.get_variant_type_display }}</strong>
+                <span>{{ variant.title }}</span>
+                {% if variant.image %}<a class="marketing-button" href="{{ variant.image.url }}" download>保存海报</a>{% endif %}
+            </article>
+        {% endfor %}
+        {% if dealer_variant %}
+            <article class="featured">
+                {% if dealer_variant.image %}<img src="{{ dealer_variant.image.url }}" alt="经销商专属海报">{% endif %}
+                <strong>{{ dealer_variant.get_variant_type_display }}</strong>
+                <span>{{ dealer_variant.title }}</span>
+                {% if dealer_variant.image %}<a class="marketing-button primary" href="{{ dealer_variant.image.url }}" download>保存专属海报</a>{% endif %}
+            </article>
+        {% else %}
+            <article class="poster-placeholder">
+                <strong>经销商专属海报</strong>
+                <span>先在第一步生成专属传播链接，即可自动生成带专属二维码的海报。</span>
+            </article>
+        {% endif %}
+    </div>
+</section>
+
+<section class="package-section">
+    <h2>第六步：回填微信/抖音发布记录</h2>
+    <p class="section-note">朋友圈、微信群可登记发布动作和发布时间；视频号、抖音可补录外部链接、播放、点赞等数据，后续看板和周报会自动统计。</p>
+    <form class="publication-form" method="post" action="{% url 'marketing:add-publication' package.public_token %}">
+        {% csrf_token %}
+        {% for field in publication_form %}
+            <label><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</label>
+        {% endfor %}
+        <button class="marketing-button primary" type="submit">保存发布记录</button>
+    </form>
+    <div class="publication-list">
+        {% for publication in external_publications %}
+            <article>
+                <div>
+                    <strong>{{ publication.channel_label }}｜{{ publication.title }}</strong>
+                    <span>{{ publication.account_name|default:"未填写账号" }} · {{ publication.get_status_display }}{% if publication.published_at %} · {{ publication.published_at|date:"Y-m-d H:i" }}{% endif %}</span>
+                </div>
+                <p>播放/浏览 {{ publication.view_count }} · 点赞 {{ publication.like_count }} · 评论 {{ publication.comment_count }} · 转发 {{ publication.share_count }}</p>
+                {% if publication.external_url %}<a href="{{ publication.external_url }}" target="_blank" rel="noopener">打开外部链接</a>{% endif %}
+            </article>
+        {% empty %}
+            <p>尚未回填外部发布记录。</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,11 +1,12 @@
 import logging
 
+from django.contrib.auth import logout
 from django.db import connection
 from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_http_methods
 
 from media_assets.selectors import decorate_with_media, public_media_prefetch
 
@@ -86,6 +87,13 @@ def health(request):
 @require_GET
 def privacy(request):
     return render(request, "core/privacy.html")
+
+
+@never_cache
+@require_http_methods(["GET", "POST"])
+def admin_logout(request):
+    logout(request)
+    return redirect("admin:login")
 
 
 @never_cache

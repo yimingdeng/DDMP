@@ -42,7 +42,15 @@ def _rate_limited(request):
 
 
 def _remember_safe_values(request):
-    allowed = ("name", "phone", "area_name", "organization", "message", "intent_type")
+    allowed = (
+        "name",
+        "phone",
+        "area_name",
+        "organization",
+        "message",
+        "customer_identity",
+        "intent_type",
+    )
     request.session["inquiry_form_values"] = {
         key: request.POST.get(key, "")[:500] for key in allowed
     }
@@ -69,6 +77,8 @@ def submit_inquiry(request):
         return redirect(f"{return_path}#contact")
     form = InquiryForm(request.POST)
     if form.is_valid():
+        from campaigns.models import MarketingPackage, PromotionIdentity, TrackedLink
+
         submission_key = str(form.cleaned_data["submission_key"])
         if Inquiry.objects.filter(submission_key=submission_key).exists():
             messages.info(request, "该咨询已经提交，无需重复操作。")
@@ -101,6 +111,24 @@ def submit_inquiry(request):
         inquiry.demo_site = demo_site
         inquiry.source_code = getattr(request, "campaign_source", "direct")
         inquiry.source_path = (getattr(request, "campaign_landing_path", "") or return_path)[:300]
+        inquiry.marketing_package = (
+            MarketingPackage.objects.select_related(
+                "published_observation__observation__site__variety"
+            )
+            .filter(
+                pk=getattr(request, "campaign_package_id", None),
+                status__in=("ready", "published"),
+            )
+            .first()
+        )
+        if inquiry.marketing_package and not inquiry.marketing_package.is_publicly_available():
+            inquiry.marketing_package = None
+        inquiry.promotion_identity = PromotionIdentity.objects.filter(
+            pk=getattr(request, "campaign_promoter_id", None), is_active=True
+        ).first()
+        inquiry.tracked_link = TrackedLink.objects.filter(
+            pk=getattr(request, "campaign_tracked_link_id", None), is_active=True
+        ).first()
         inquiry.submission_key = submission_key
         inquiry.privacy_version = configuration.privacy_version
         inquiry.consent_at = timezone.now()

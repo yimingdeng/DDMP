@@ -1,0 +1,28 @@
+{% extends "campaigns/portal_base.html" %}
+{% block title %}{{ report.title }}{% endblock %}
+{% block content %}
+<section class="marketing-heading">
+    <span>Sprint 18</span>
+    <h1>{{ report.title }}</h1>
+    <p>自动汇总最近 7 天传播表现，可复制到周会、微信群或公众号选题准备中。</p>
+</section>
+
+<section class="package-section report-card">
+    <h2>周报摘要</h2>
+    <textarea id="weekly-summary" readonly>{{ report.summary }}</textarea>
+    <button type="button" data-copy-target="weekly-summary">复制周报摘要</button>
+</section>
+
+<section class="package-section report-card">
+    <h2>建议动作</h2>
+    <textarea id="weekly-actions" readonly>{{ report.recommended_actions }}</textarea>
+    <button type="button" data-copy-target="weekly-actions">复制建议动作</button>
+</section>
+
+<section class="stats-grid">
+    <article><span>营销访问</span><strong>{{ kpis.visit_count }}</strong><em>UV {{ kpis.visitor_count }}</em></article>
+    <article><span>回流咨询</span><strong>{{ kpis.inquiry_count }}</strong><em>最近 7 天</em></article>
+    <article><span>外部发布</span><strong>{{ kpis.publication_count }}</strong><em>微信/抖音等</em></article>
+    <article><span>播放/浏览</span><strong>{{ kpis.external_views }}</strong><em>人工回填指标</em></article>
+</section>
+{% endblock %}

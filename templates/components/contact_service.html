@@ -59,14 +59,29 @@
                 </div>
                 <div class="form-row">
                     <label>
+                        <span>您的身份 *</span>
+                        <select name="customer_identity" required>
+                            <option value="farmer"{% if inquiry_form_values.customer_identity == "farmer" %} selected{% endif %}>农户</option>
+                            <option value="large_grower"{% if inquiry_form_values.customer_identity == "large_grower" %} selected{% endif %}>种植大户</option>
+                            <option value="cooperative"{% if inquiry_form_values.customer_identity == "cooperative" %} selected{% endif %}>合作社</option>
+                            <option value="dealer"{% if inquiry_form_values.customer_identity == "dealer" %} selected{% endif %}>经销商</option>
+                            <option value="retailer"{% if inquiry_form_values.customer_identity == "retailer" %} selected{% endif %}>零售商</option>
+                            <option value="other"{% if inquiry_form_values.customer_identity == "other" %} selected{% endif %}>其他</option>
+                        </select>
+                    </label>
+                    <label>
                         <span>咨询类型 *</span>
                         <select name="intent_type" required>
                             <option value="consultation"{% if inquiry_form_values.intent_type == "consultation" %} selected{% elif not inquiry_form_values.intent_type and not site %} selected{% elif site and site.visiting_status != "open" %} selected{% endif %}>产品咨询</option>
                             <option value="site_visit"{% if inquiry_form_values.intent_type == "site_visit" %} selected{% elif not inquiry_form_values.intent_type and site and site.visiting_status == "open" %} selected{% elif site and site.visiting_status != "open" %} disabled{% endif %}>预约看田{% if site and site.visiting_status != "open" %}（当前未开放）{% endif %}</option>
                             <option value="trial"{% if inquiry_form_values.intent_type == "trial" %} selected{% endif %}>申请试种</option>
                             <option value="agency"{% if inquiry_form_values.intent_type == "agency" %} selected{% endif %}>代理合作</option>
+                            <option value="event"{% if inquiry_form_values.intent_type == "event" %} selected{% endif %}>参加观摩会</option>
+                            <option value="feedback"{% if inquiry_form_values.intent_type == "feedback" %} selected{% endif %}>提交反馈</option>
                         </select>
                     </label>
+                </div>
+                <div class="form-row">
                     <label>
                         <span>所在区域 *</span>
                         <input type="text" name="area_name" maxlength="50" list="service-areas" placeholder="例如：河南" value="{{ inquiry_form_values.area_name|default:'' }}" required>
@@ -74,11 +89,11 @@
                             {% for contact in regional_contacts %}<option value="{{ contact.area_name }}">{% endfor %}
                         </datalist>
                     </label>
+                    <label>
+                        <span>单位/组织</span>
+                        <input type="text" name="organization" maxlength="100" autocomplete="organization" value="{{ inquiry_form_values.organization|default:'' }}">
+                    </label>
                 </div>
-                <label>
-                    <span>单位/组织</span>
-                    <input type="text" name="organization" maxlength="100" autocomplete="organization" value="{{ inquiry_form_values.organization|default:'' }}">
-                </label>
                 <label>
                     <span>咨询内容</span>
                     <textarea name="message" maxlength="500" rows="4" placeholder="例如：希望了解品种表现、安排看田或试种">{{ inquiry_form_values.message|default:'' }}</textarea>

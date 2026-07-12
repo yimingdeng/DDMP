@@ -402,6 +402,12 @@
     grid-column: 1 / -1;
 }
 
+.field-help {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 400;
+}
+
 .location-panel {
     border: 1px solid rgb(32 105 58 / 22%);
     background: #f3f8f1;

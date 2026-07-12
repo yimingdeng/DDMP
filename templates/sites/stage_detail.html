@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.variety.name }}{{ snapshot.observation.get_stage_display }}表现｜{{ site.name }}{% endblock %}
+{% block body_class %}{{ site_config.theme_css_class }} stage-detail-page has-mobile-action-bar{% endblock %}
+
+{% block content %}
+<section class="stage-detail-hero">
+    <div class="container stage-detail-heading">
+        <a class="back-link" href="{{ site.get_absolute_url }}">← 返回示范点</a>
+        <span class="eyebrow">{{ site.province }} {{ site.city }} · 田间实拍</span>
+        <h1>{{ snapshot.observation.get_stage_display }}表现</h1>
+        <strong>{{ site.variety.name }}｜{{ site.name }}</strong>
+        {% if marketing_package.core_tags %}
+            <div class="stage-marketing-tags">{% for tag in marketing_package.core_tags %}<span>{{ tag }}</span>{% endfor %}</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="content-section stage-detail-content">
+    <div class="container stage-detail-column">
+        {% if snapshot.public_photos %}
+            <div class="stage-primary-gallery" data-media-gallery>
+                {% for photo in snapshot.public_photos %}
+                    <a href="{{ photo.image.url }}" data-gallery-item data-caption="{{ photo.caption|default:snapshot.observation.get_stage_display }}">
+                        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:snapshot.observation.get_stage_display }}现场照片" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% for video in snapshot.public_videos %}
+            <video class="public-field-video" controls playsinline preload="metadata" data-video-maximize src="{{ video.video.url }}"></video>
+        {% endfor %}
+        {% if snapshot.key_display_rows %}
+            <dl class="key-metric-grid stage-key-metrics">
+                {% for label, value in snapshot.key_display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+            </dl>
+        {% endif %}
+        {% if external_publications %}
+            <section class="stage-external-videos">
+                <span>已发布短视频</span>
+                <h2>视频号 / 抖音内容</h2>
+                <div>
+                    {% for publication in external_publications %}
+                        <a href="{{ publication.external_url }}" target="_blank" rel="noopener">
+                            <strong>{{ publication.channel_label }}</strong>
+                            <em>{{ publication.title }}</em>
+                            <small>{{ publication.account_name|default:"官方发布" }}{% if publication.view_count %} · {{ publication.view_count }} 次播放{% endif %}</small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {% if snapshot.public_summary %}
+            <article class="stage-summary-card"><span>审核摘要</span><p>{{ snapshot.public_summary }}</p></article>
+        {% endif %}
+        {% if snapshot.display_rows %}
+            <dl class="data-grid public-observation-data">
+                {% for label, value in snapshot.display_rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+            </dl>
+        {% endif %}
+        <div class="stage-conversion-card">
+            <span class="eyebrow dark">下一步</span>
+            <h2>想了解更多田间表现？</h2>
+            <p>可以提交咨询、预约看田、申请试种或申请经销合作，区域服务人员会尽快联系。</p>
+            <a class="button button-primary" href="#contact">提交咨询</a>
+        </div>
+    </div>
+</section>
+{% include "components/mobile_action_bar.html" with first_url=site.get_absolute_url first_label="返回" third_url="#contact" third_label="我要咨询" only %}
+{% endblock %}

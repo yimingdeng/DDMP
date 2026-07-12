@@ -29,6 +29,17 @@ class InquiryIntent(models.TextChoices):
     SITE_VISIT = "site_visit", "预约看田"
     TRIAL = "trial", "申请试种"
     AGENCY = "agency", "代理合作"
+    EVENT = "event", "参加观摩会"
+    FEEDBACK = "feedback", "提交反馈"
+
+
+class CustomerIdentity(models.TextChoices):
+    DEALER = "dealer", "经销商"
+    FARMER = "farmer", "农户"
+    LARGE_GROWER = "large_grower", "种植大户"
+    COOPERATIVE = "cooperative", "合作社"
+    RETAILER = "retailer", "零售商"
+    OTHER = "other", "其他"
 
 
 class RegionalContact(PublishableModel):
@@ -65,6 +76,9 @@ class Inquiry(models.Model):
     area_name = models.CharField("所在区域", max_length=50)
     organization = models.CharField("单位/组织", max_length=100, blank=True)
     message = models.TextField("咨询内容", max_length=500, blank=True)
+    customer_identity = models.CharField(
+        "客户身份", max_length=30, choices=CustomerIdentity.choices, default=CustomerIdentity.OTHER
+    )
     intent_type = models.CharField(
         "意向类型",
         max_length=30,
@@ -116,6 +130,33 @@ class Inquiry(models.Model):
         editable=False,
     )
     source_path = models.CharField("来源页面", max_length=300, blank=True, editable=False)
+    marketing_package = models.ForeignKey(
+        "campaigns.MarketingPackage",
+        verbose_name="来源营销素材",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="inquiries",
+    )
+    promotion_identity = models.ForeignKey(
+        "campaigns.PromotionIdentity",
+        verbose_name="来源推广人",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="inquiries",
+    )
+    tracked_link = models.ForeignKey(
+        "campaigns.TrackedLink",
+        verbose_name="来源追踪链接",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="inquiries",
+    )
     submission_key = models.CharField(
         "防重复提交标识",
         max_length=36,

@@ -8,7 +8,7 @@
         {% for media in video_links %}
             {% if media.media_type == "local_video" %}
                 <article class="video-card local-video-card">
-                    <video controls preload="metadata" playsinline{% if media.display_image %} poster="{{ media.display_image.url }}"{% endif %}>
+                    <video controls preload="metadata" playsinline data-video-maximize{% if media.display_image %} poster="{{ media.display_image.url }}"{% endif %}>
                         <source src="{{ media.video_file.url }}" type="video/mp4">
                         您的浏览器不支持 MP4 视频播放。
                     </video>

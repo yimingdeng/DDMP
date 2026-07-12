@@ -17,6 +17,7 @@ class InquiryForm(forms.ModelForm):
             "area_name",
             "organization",
             "message",
+            "customer_identity",
             "intent_type",
             "privacy_consent",
         )

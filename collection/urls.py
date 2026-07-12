@@ -1,20 +1,15 @@
-from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
-from .forms import CollectorAuthenticationForm
 
 app_name = "collection"
 
-collector_login_view = auth_views.LoginView.as_view(
-    template_name="collection/login.html",
-    authentication_form=CollectorAuthenticationForm,
-)
+collector_login_view = views.CollectionLoginView.as_view()
 
 urlpatterns = [
     path("", collector_login_view, name="landing"),
     path("login/", collector_login_view, name="login"),
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("logout/", views.collection_logout, name="logout"),
     path("mine/", views.dashboard, name="dashboard"),
     path("apply/", views.create_demo_application, name="create-demo-application"),
     path("sites/<int:pk>/", views.site_tasks, name="site-tasks"),

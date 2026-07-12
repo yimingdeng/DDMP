@@ -3,12 +3,16 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.views import admin_logout
+
 urlpatterns = [
+    path("admin/logout/", admin_logout),
     path("admin/", admin.site.urls),
     path("varieties/", include("varieties.urls")),
     path("sites/", include("sites.urls")),
     path("inquiries/", include("inquiries.urls")),
     path("campaigns/", include("campaigns.urls")),
+    path("marketing/", include("campaigns.portal_urls")),
     path("q/", include("campaigns.public_urls")),
     path("analytics/", include("analytics.urls")),
     path("collection/", include("collection.urls")),

@@ -1,13 +1,27 @@
 from django.conf import settings
-from django.core.validators import MaxLengthValidator
+from django.core.validators import MaxLengthValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
+
+mobile_phone_validator = RegexValidator(
+    regex=r"^1[3-9]\d{9}$",
+    message="请输入 11 位中国大陆手机号。",
+)
+
+
+def generated_user_phone(user_id):
+    return f"199{int(user_id) % 100000000:08d}"
 
 
 class PublicationStatus(models.TextChoices):
     DRAFT = "draft", "草稿"
     PUBLISHED = "published", "已发布"
     ARCHIVED = "archived", "已归档"
+
+
+class SiteColorTheme(models.TextChoices):
+    SYSTEM = "system", "系统基本色调（绿色）"
+    PURPLE_YELLOW = "purple_yellow", "紫色＋黄色"
 
 
 class PublishedQuerySet(models.QuerySet):
@@ -58,6 +72,13 @@ class SiteConfiguration(models.Model):
     site_name = models.CharField("站点名称", max_length=100, default="玉米重点品种数字展示平台")
     company_name = models.CharField("公司名称", max_length=100, blank=True)
     logo = models.FileField("Logo", upload_to="site/", blank=True)
+    color_theme = models.CharField(
+        "系统主色调",
+        max_length=30,
+        choices=SiteColorTheme.choices,
+        default=SiteColorTheme.PURPLE_YELLOW,
+        help_text="控制公开营销首页、示范传播页以及新生成的营销图片；不改变采集端和后台管理界面。",
+    )
     hero_title = models.CharField(
         "首页主标题",
         max_length=100,
@@ -137,6 +158,40 @@ class SiteConfiguration(models.Model):
     def load(cls):
         configuration, _ = cls.objects.get_or_create(pk=1)
         return configuration
+
+    @property
+    def theme_css_class(self):
+        return f"theme-{self.color_theme.replace('_', '-')}"
+
+    @property
+    def theme_color(self):
+        if self.color_theme == SiteColorTheme.PURPLE_YELLOW:
+            return "#32128f"
+        return "#174b2a"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name="用户",
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    phone = models.CharField(
+        "手机",
+        max_length=11,
+        unique=True,
+        validators=[mobile_phone_validator],
+        help_text="必填。可用于登录系统，现有用户会先自动生成临时手机号，后续可修改。",
+    )
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        verbose_name = "用户扩展信息"
+        verbose_name_plural = "用户扩展信息"
+
+    def __str__(self):
+        return f"{self.user.username} · {self.phone}"
 
 
 class AuditEvent(models.Model):

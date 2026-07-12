@@ -141,6 +141,7 @@ CSRF_COOKIE_SECURE=true
 ```powershell
 Set-Location D:\DDMP-RUNTIME\app\current
 D:\DDMP-RUNTIME\venv\Scripts\python.exe manage.py migrate
+D:\DDMP-RUNTIME\venv\Scripts\python.exe manage.py generate_marketing_materials --missing-only
 D:\DDMP-RUNTIME\venv\Scripts\python.exe manage.py collectstatic --noinput
 D:\DDMP-RUNTIME\venv\Scripts\python.exe manage.py check --deploy
 D:\DDMP-RUNTIME\venv\Scripts\python.exe manage.py createsuperuser

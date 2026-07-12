@@ -19,6 +19,7 @@ def test_code_package_builder_excludes_database_and_media():
     assert "dumpdata" not in script
     assert "sourceMediaDir" not in script
     assert '"pytest-of-*"' in script
+    assert '".tmp"' in script
 
 
 def test_server_apply_script_has_no_destructive_data_import_commands():

@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from sites.models import DemoSite
 
 from .models import AnomalyReport, DemoApplication, validate_field_video
-from .stage_fields import CHOICE_SETS, STAGE_FIELDS
+from .stage_fields import CHOICE_SETS, KEY_STAGE_FIELDS, STAGE_FIELDS
 
 
 class CollectorAuthenticationForm(AuthenticationForm):
@@ -55,13 +55,13 @@ class DemoApplicationForm(forms.ModelForm):
             "applicant_name",
             "phone",
             "variety",
-            "proposed_site_name",
             "region",
             "province",
             "city",
             "county",
             "township_village",
             "detailed_address",
+            "proposed_site_name",
             "proposed_area_mu",
             "planned_sowing_date",
             "planting_experience",
@@ -77,9 +77,30 @@ class DemoApplicationForm(forms.ModelForm):
         from varieties.models import Variety
 
         self.fields["variety"].queryset = Variety.published.all()
+        self.fields["proposed_site_name"].required = False
+        self.fields[
+            "proposed_site_name"
+        ].help_text = "默认按“区县 + 乡镇/村”自动生成，也可以手动修改。"
 
     def clean_phone(self):
         return " ".join(self.cleaned_data["phone"].strip().split())
+
+    def clean(self):
+        data = super().clean()
+        proposed_site_name = (data.get("proposed_site_name") or "").strip()
+        if not proposed_site_name:
+            county = (data.get("county") or "").strip()
+            township_village = (data.get("township_village") or "").strip()
+            proposed_site_name = f"{county}{township_village}".strip()
+            if proposed_site_name:
+                data["proposed_site_name"] = proposed_site_name
+            else:
+                self.add_error(
+                    "proposed_site_name", "请填写区县或乡镇/村，系统将自动生成示范点名称。"
+                )
+        else:
+            data["proposed_site_name"] = proposed_site_name
+        return data
 
 
 class DemoSiteBasicInfoForm(forms.ModelForm):
@@ -258,7 +279,11 @@ class ObservationForm(forms.Form):
                     field.widget.attrs["aria-readonly"] = "true"
             elif field_type.startswith("choice:"):
                 choices = CHOICE_SETS[field_type.split(":", 1)[1]]
-                field = forms.ChoiceField(label=label, required=required, choices=choices)
+                field = forms.ChoiceField(
+                    label=label,
+                    required=required,
+                    choices=(("", "请选择"), *choices) if not required else choices,
+                )
             elif field_type.startswith("multi:"):
                 choices = CHOICE_SETS[field_type.split(":", 1)[1]]
                 field = forms.MultipleChoiceField(
@@ -300,6 +325,25 @@ class ObservationForm(forms.Form):
             if density and row_spacing:
                 plant_spacing = Decimal("6666666.67") / (Decimal(density) * row_spacing)
                 data["plant_spacing"] = plant_spacing.quantize(Decimal("0.1"))
+        if self.stage == "maturity":
+            lodging_rate = data.get("lodging_rate")
+            if lodging_rate is not None and not data.get("lodging_level"):
+                data["lodging_level"] = self._level_from_rate(
+                    lodging_rate,
+                    none=Decimal("0.5"),
+                    light=Decimal("5"),
+                    medium=Decimal("15"),
+                    values=("none", "light", "medium", "heavy"),
+                )
+            ear_rot_rate = data.get("ear_rot_rate")
+            if ear_rot_rate is not None and not data.get("disease_pressure"):
+                data["disease_pressure"] = self._level_from_rate(
+                    ear_rot_rate,
+                    none=Decimal("0.5"),
+                    light=Decimal("3"),
+                    medium=Decimal("10"),
+                    values=("none", "light", "medium", "heavy"),
+                )
         if self.stage == "flowering":
             tasseling = data.get("tasseling_date")
             silking = data.get("silking_date")
@@ -309,6 +353,16 @@ class ObservationForm(forms.Form):
         if self.submitting and self.existing_photo_count + new_photo_count < 1:
             self.add_error("photos", "提交阶段记录前至少需要一张现场照片。")
         return data
+
+    @staticmethod
+    def _level_from_rate(value, *, none, light, medium, values):
+        if value <= none:
+            return values[0]
+        if value <= light:
+            return values[1]
+        if value <= medium:
+            return values[2]
+        return values[3]
 
     def observation_data(self):
         excluded = {
@@ -340,9 +394,11 @@ class ObservationForm(forms.Form):
                 result["actual_yield_kg_mu"] = str((weight / area).quantize(Decimal("0.01")))
         return result
 
-    def display_rows(self):
+    def _display_rows_for_names(self, names=None):
         rows = []
         for name, label, _field_type, _required in STAGE_FIELDS[self.stage]:
+            if names is not None and name not in names:
+                continue
             value = self.initial.get(name)
             if value in (None, "", []):
                 continue
@@ -358,11 +414,29 @@ class ObservationForm(forms.Form):
             "flowering_interval_days": "抽雄至吐丝间隔（天）",
             "actual_yield_kg_mu": "实收亩产（公斤/亩，未折算水分）",
         }
-        for name, label in calculated_labels.items():
-            value = self.initial.get(name)
-            if value not in (None, ""):
-                rows.append((label, value))
+        if names is None:
+            for name, label in calculated_labels.items():
+                value = self.initial.get(name)
+                if value not in (None, ""):
+                    rows.append((label, value))
         note = self.initial.get("collector_note")
-        if note:
+        if note and names is None:
             rows.append(("负责人评价", note))
+        return rows
+
+    def display_rows(self):
+        return self._display_rows_for_names()
+
+    def key_display_rows(self):
+        key_names = set(KEY_STAGE_FIELDS.get(self.stage, ()))
+        rows = self._display_rows_for_names(key_names)
+        calculated_labels = {
+            "flowering_interval_days": "抽雄至吐丝间隔（天）",
+            "actual_yield_kg_mu": "实收亩产（公斤/亩，未折算水分）",
+        }
+        for name in KEY_STAGE_FIELDS.get(self.stage, ()):
+            if name in calculated_labels:
+                value = self.initial.get(name)
+                if value not in (None, ""):
+                    rows.append((calculated_labels[name], value))
         return rows

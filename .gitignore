@@ -16,6 +16,7 @@ venv/
 .env.*
 !.env.example
 .local/
+.tmp/
 *.sqlite3
 
 # IDE and OS

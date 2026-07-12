@@ -8,7 +8,7 @@ from django.test import override_settings
 from django.urls import reverse
 from PIL import Image
 
-from core.models import PublicationStatus, SiteConfiguration
+from core.models import PublicationStatus, SiteColorTheme, SiteConfiguration
 from media_assets.models import MediaAsset, MediaType, VideoPlatform
 from varieties.models import SellingPoint, Variety
 
@@ -53,14 +53,38 @@ def test_fe_home_002_and_fe_lead_001_use_compact_mobile_layout(client):
     content = response.content.decode()
     css = (settings.BASE_DIR / "static/css/site.css").read_text(encoding="utf-8")
 
-    assert "site.css?v=20260707-6" in content
+    assert "site.css?v=20260709-3" in content
     assert ".feature-card .text-link" in css
     assert ".regional-contact-card h3" in css
     assert ".inquiry-form .form-row" in css
+    assert 'content="#32128f"' in content
+    assert ".home-page .hero" in css
+    assert "--brand-purple-800: #4a24d8" in css
+    assert "--brand-yellow: #fff500" in css
     assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in css
     assert ".lightbox[open]" in css
     assert "position: fixed;" in css
     assert "env(safe-area-inset-top)" in css
+
+
+@pytest.mark.django_db
+def test_fe_theme_001_site_configuration_switches_public_marketing_theme(client):
+    configuration = SiteConfiguration.load()
+    configuration.color_theme = SiteColorTheme.SYSTEM
+    configuration.save(update_fields=("color_theme", "updated_at"))
+
+    response = client.get(reverse("core:home"))
+    content = response.content.decode()
+
+    assert 'class="theme-system home-page has-mobile-action-bar"' in content
+    assert '<meta name="theme-color" content="#174b2a">' in content
+
+    configuration.color_theme = SiteColorTheme.PURPLE_YELLOW
+    configuration.save(update_fields=("color_theme", "updated_at"))
+    content = client.get(reverse("core:home")).content.decode()
+
+    assert 'class="theme-purple-yellow home-page has-mobile-action-bar"' in content
+    assert '<meta name="theme-color" content="#32128f">' in content
 
 
 @pytest.mark.django_db
@@ -116,9 +140,12 @@ def test_home_page_uses_published_featured_variety(client):
     assert f'href="{reverse("sites:list")}">查看示范点</a>' in content
     assert f'href="{variety.get_absolute_url()}">查看品种详情</a>' in content
     assert 'href="#regional-contacts">我要咨询</a>' in content
+    assert f'href="{reverse("marketing:dashboard")}?entry=home">我要发布</a>' in content
+    assert "https://bzb889.originseed.com.cn/marketing/" not in content
+    assert content.index("我的示范") < content.index("我要发布")
     assert "data-home-first-action" in content
     assert "site.js?v=20260708-1" in content
-    assert 'class="home-page has-mobile-action-bar"' in content
+    assert 'class="theme-purple-yellow home-page has-mobile-action-bar"' in content
     assert 'aria-label="页面快捷操作"' in content
     assert f'data-default-href="{variety.get_absolute_url()}"' in content
     assert 'data-default-label="看详情"' in content
@@ -242,6 +269,7 @@ def test_home_local_video_cover_renders_inline_player(client, tmp_path):
 
         assert response.status_code == 200
         assert 'class="hero-local-video" controls' in content
+        assert "data-video-maximize" in content
         assert media.video_file.url in content
         assert f'poster="{media.thumbnail.url}"' in content
         assert content.index('class="hero-local-video"') < content.index('class="hero-copy"')

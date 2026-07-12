@@ -5,3 +5,6 @@ class CampaignsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "campaigns"
     verbose_name = "传播与二维码"
+
+    def ready(self):
+        from . import signals  # noqa: F401

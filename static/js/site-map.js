@@ -74,15 +74,24 @@ async function initializeSiteMap() {
         });
         function openSitePopup(site, marker, distance) {
             const popup = document.createElement("div");
+            popup.className = "site-map-popup";
+            if (site.image) {
+                const image = document.createElement("img");
+                image.src = site.image;
+                image.alt = `${site.name}示范照片`;
+                popup.append(image);
+            }
             const title = document.createElement("strong");
+            const meta = document.createElement("span");
             const link = document.createElement("a");
             const distanceText = Number.isFinite(distance)
                 ? ` · 距您约 ${distance < 10 ? distance.toFixed(1) : Math.round(distance)} 公里`
                 : "";
             title.textContent = `${site.name}${distanceText}`;
+            meta.textContent = site.stage ? `${site.stage} · 热度 ${site.heat || 0}` : `热度 ${site.heat || 0}`;
             link.href = site.url;
             link.textContent = "查看详情";
-            popup.append(title, link);
+            popup.append(title, meta, link);
             new AMap.InfoWindow({
                 autoMove: false,
                 content: popup,
@@ -179,4 +188,25 @@ viewButtons.forEach((button) => {
     button.addEventListener("click", () => setSiteView(button.dataset.siteView));
 });
 
+function autoApplyDistanceSort() {
+    const distanceSort = document.getElementById("site-distance-sort");
+    if (!distanceSort || distanceSort.dataset.hasLocation === "1" || !navigator.geolocation) {
+        return;
+    }
+    const autoSortKey = `ddmp-site-distance-sort:${window.location.pathname}${window.location.search}`;
+    if (window.sessionStorage?.getItem(autoSortKey) === "1") return;
+    window.sessionStorage?.setItem(autoSortKey, "1");
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const url = new URL(distanceSort.dataset.distanceSortUrl, window.location.href);
+            url.searchParams.set("lat", position.coords.latitude.toFixed(6));
+            url.searchParams.set("lng", position.coords.longitude.toFixed(6));
+            window.location.replace(url.toString());
+        },
+        () => {},
+        { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
+    );
+}
+
+autoApplyDistanceSort();
 setSiteView("map");

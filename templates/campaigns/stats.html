@@ -1,0 +1,64 @@
+{% extends "campaigns/portal_base.html" %}
+{% block title %}营销统计看板{% endblock %}
+{% block content %}
+<section class="marketing-heading">
+    <span>Sprint 17</span>
+    <h1>营销统计看板</h1>
+    <p>{{ start_date|date:"Y-m-d" }} 至 {{ end_date|date:"Y-m-d" }}，查看传播访问、客户咨询、外部视频指标和热门内容。</p>
+</section>
+
+<section class="stats-grid">
+    <article><span>营销访问</span><strong>{{ kpis.visit_count }}</strong><em>UV {{ kpis.visitor_count }}</em></article>
+    <article><span>回流咨询</span><strong>{{ kpis.inquiry_count }}</strong><em>来源已归因</em></article>
+    <article><span>外部发布</span><strong>{{ kpis.publication_count }}</strong><em>累计已发布 {{ active_publications }}</em></article>
+    <article><span>播放/浏览</span><strong>{{ kpis.external_views }}</strong><em>点赞 {{ kpis.external_likes }} · 转发 {{ kpis.external_shares }}</em></article>
+</section>
+
+<section class="package-section">
+    <h2>热门示范内容</h2>
+    <div class="ranking-grid">
+        <article>
+            <h3>访问排行</h3>
+            {% for row in kpis.package_visits %}
+                <p><strong>{{ row.marketing_package__published_observation__observation__site__name }}</strong><span>{{ row.total }} 次</span></p>
+            {% empty %}<p>暂无访问数据。</p>{% endfor %}
+        </article>
+        <article>
+            <h3>咨询排行</h3>
+            {% for row in kpis.package_inquiries %}
+                <p><strong>{{ row.marketing_package__published_observation__observation__site__name }}</strong><span>{{ row.total }} 条</span></p>
+            {% empty %}<p>暂无咨询数据。</p>{% endfor %}
+        </article>
+        <article>
+            <h3>来源渠道</h3>
+            {% for row in kpis.sources %}
+                <p><strong>{{ row.source_code }}</strong><span>{{ row.total }} 次</span></p>
+            {% empty %}<p>暂无来源数据。</p>{% endfor %}
+        </article>
+        <article>
+            <h3>推广人线索</h3>
+            {% for row in kpis.promoters %}
+                <p><strong>{{ row.promotion_identity__name|default:"公司公共链接" }}</strong><span>{{ row.total }} 条</span></p>
+            {% empty %}<p>暂无推广人线索。</p>{% endfor %}
+        </article>
+    </div>
+</section>
+
+<section class="package-section">
+    <h2>最近外部发布</h2>
+    <div class="publication-list">
+        {% for publication in kpis.publications %}
+            <article>
+                <div>
+                    <strong>{{ publication.channel_label }}｜{{ publication.title }}</strong>
+                    <span>{{ publication.account_name|default:"未填写账号" }} · {{ publication.published_at|date:"Y-m-d H:i" }}</span>
+                </div>
+                <p>播放/浏览 {{ publication.view_count }} · 点赞 {{ publication.like_count }} · 评论 {{ publication.comment_count }} · 转发 {{ publication.share_count }}</p>
+                {% if publication.external_url %}<a href="{{ publication.external_url }}" target="_blank" rel="noopener">打开外部链接</a>{% endif %}
+            </article>
+        {% empty %}
+            <p>暂无外部发布记录。</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

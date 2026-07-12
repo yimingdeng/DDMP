@@ -1,0 +1,14 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+    {% if original and has_change_permission %}
+        <li>
+            <form method="post" action="{% url 'admin:campaigns_marketingpackage_generate_materials' original.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="button" style="padding:7px 12px;cursor:pointer">立即生成/重新生成海报和封面</button>
+            </form>
+        </li>
+    {% endif %}
+    {{ block.super }}
+{% endblock %}

@@ -1,17 +1,18 @@
 import ipaddress
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import F
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from core.models import SiteConfiguration
+from core.share_meta import build_share_meta
 
-from .models import ChannelQRCode
+from .models import ChannelQRCode, TrackedLink
 from .qr import render_qr_png
 
 
@@ -49,7 +50,11 @@ def build_scan_url(request, qr_code):
 @require_GET
 def scan_redirect(request, token):
     qr_code = get_object_or_404(
-        ChannelQRCode.objects.select_related("variety", "demo_site__variety"),
+        ChannelQRCode.objects.select_related(
+            "variety",
+            "demo_site__variety",
+            "published_observation__observation__site__variety",
+        ),
         token=token,
     )
     if not qr_code.is_active:
@@ -64,6 +69,53 @@ def scan_redirect(request, token):
         last_scanned_at=timezone.now(),
     )
     return redirect(qr_code.get_target_url())
+
+
+@require_GET
+def tracked_link_redirect(request, token):
+    tracked_link = get_object_or_404(
+        TrackedLink.objects.select_related(
+            "marketing_package__published_observation__observation__site__variety",
+            "promoter",
+        ),
+        token=token,
+    )
+    package = tracked_link.marketing_package
+    if not tracked_link.is_active or not package.is_publicly_available():
+        messages.warning(request, "该传播内容暂不可用，已为您返回平台首页。")
+        return redirect("core:home")
+    TrackedLink.objects.filter(pk=tracked_link.pk).update(
+        click_count=F("click_count") + 1,
+        last_clicked_at=timezone.now(),
+    )
+    request.session["campaign_source"] = tracked_link.source_code
+    request.session["campaign_landing_path"] = package.get_absolute_url()
+    request.session["campaign_package_id"] = package.pk
+    request.session["campaign_promoter_id"] = tracked_link.promoter_id
+    request.session["campaign_tracked_link_id"] = tracked_link.pk
+    redirect_url = f"{package.get_absolute_url()}?{urlencode({'share': str(tracked_link.token)})}"
+    snapshot = package.published_observation
+    observation = snapshot.observation
+    image_url = package.video_cover.url if package.video_cover else ""
+    if not image_url:
+        first_photo = observation.photos.order_by("uploaded_at", "id").first()
+        if first_photo:
+            image_url = first_photo.image.url
+    return render(
+        request,
+        "campaigns/tracked_link_landing.html",
+        {
+            "package": package,
+            "redirect_url": redirect_url,
+            "share_meta": build_share_meta(
+                request,
+                title=package.headline,
+                description=snapshot.public_summary or observation.site.main_performance,
+                image_url=image_url,
+                url=tracked_link.get_share_path(),
+            ),
+        },
+    )
 
 
 @staff_member_required

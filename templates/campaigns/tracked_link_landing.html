@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ package.headline }}{% endblock %}
+{% block body_class %}campaign-landing-page{% endblock %}
+{% block extra_head %}
+    <meta http-equiv="refresh" content="0;url={{ redirect_url }}">
+{% endblock %}
+{% block content %}
+<section class="campaign-landing-card">
+    <span>正在打开示范表现</span>
+    <h1>{{ package.headline }}</h1>
+    <p>如果页面没有自动跳转，请点击下方按钮继续查看。</p>
+    <a class="primary-button" href="{{ redirect_url }}">查看详情</a>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    window.location.replace("{{ redirect_url|escapejs }}");
+</script>
+{% endblock %}

@@ -36,6 +36,9 @@ class PublicVisitMiddleware:
                     path=request.path[:300],
                     source_code=getattr(request, "campaign_source", "direct")[:40],
                     visitor_hash=hashlib.sha256(visitor_id.encode()).hexdigest(),
+                    marketing_package_id=getattr(request, "campaign_package_id", None),
+                    promotion_identity_id=getattr(request, "campaign_promoter_id", None),
+                    tracked_link_id=getattr(request, "campaign_tracked_link_id", None),
                 )
             except DatabaseError:
                 # Allows healthily starting the app before a newly deployed migration is applied.

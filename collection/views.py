@@ -1,6 +1,7 @@
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.db import transaction
 from django.db.models import Max
 from django.http import HttpResponseForbidden
@@ -12,6 +13,7 @@ from sites.models import GrowthStage
 
 from .forms import (
     AnomalyReportForm,
+    CollectorAuthenticationForm,
     DemoApplicationForm,
     DemoApplicationReviewForm,
     DemoSiteBasicInfoForm,
@@ -38,6 +40,34 @@ from .selectors import (
     reviewer_for,
 )
 from .stage_fields import STAGE_FIELDS
+
+COLLECTION_LOGOUT_REDIRECT_KEY = "collection_logout_redirect_url"
+
+
+def _is_home_entry(request):
+    next_url = request.GET.get("next", "")
+    return request.GET.get("entry") == "home" or "entry=home" in next_url
+
+
+class CollectionLoginView(LoginView):
+    template_name = "collection/login.html"
+    authentication_form = CollectorAuthenticationForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "GET":
+            request.session[COLLECTION_LOGOUT_REDIRECT_KEY] = (
+                reverse("core:home") if _is_home_entry(request) else reverse("collection:login")
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+
+@require_POST
+def collection_logout(request):
+    redirect_url = request.session.get(COLLECTION_LOGOUT_REDIRECT_KEY) or reverse(
+        "collection:login"
+    )
+    logout(request)
+    return redirect(redirect_url)
 
 
 @login_required
