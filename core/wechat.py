@@ -74,6 +74,8 @@ def build_js_sdk_config(url):
         "jsApiList": [
             "updateAppMessageShareData",
             "updateTimelineShareData",
+            "onMenuShareAppMessage",
+            "onMenuShareTimeline",
         ],
     }
 

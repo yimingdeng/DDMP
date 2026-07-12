@@ -35,12 +35,26 @@
           link: shareMeta.url || pageUrl,
           imgUrl: shareMeta.image_url || "",
         };
-        wxObject.updateAppMessageShareData(sharePayload);
-        wxObject.updateTimelineShareData({
-          title: shareMeta.title,
-          link: shareMeta.url || pageUrl,
-          imgUrl: shareMeta.image_url || "",
-        });
+        if (typeof wxObject.updateAppMessageShareData === "function") {
+          wxObject.updateAppMessageShareData(sharePayload);
+        }
+        if (typeof wxObject.updateTimelineShareData === "function") {
+          wxObject.updateTimelineShareData({
+            title: shareMeta.title,
+            link: shareMeta.url || pageUrl,
+            imgUrl: shareMeta.image_url || "",
+          });
+        }
+        if (typeof wxObject.onMenuShareAppMessage === "function") {
+          wxObject.onMenuShareAppMessage(sharePayload);
+        }
+        if (typeof wxObject.onMenuShareTimeline === "function") {
+          wxObject.onMenuShareTimeline({
+            title: shareMeta.title,
+            link: shareMeta.url || pageUrl,
+            imgUrl: shareMeta.image_url || "",
+          });
+        }
       });
       wxObject.error((error) => {
         console.warn("WeChat JS-SDK config failed.", error);

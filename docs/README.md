@@ -27,6 +27,8 @@
 21. [Sprint 16–18：外部发布、营销看板与运营周报](./21-sprint-16-18-marketing-operations.md)
 22. [Sprint 19：内容生产能力增强](./22-sprint-19-content-production.md)
 23. [Sprint 20：采集数据标准化与移动展示优化](./23-sprint-20-field-data-and-mobile-display.md)
+24. [营销人员微信、抖音发布操作模式与优化方案](./24-marketing-publishing-operation-and-optimization.md)
+25. [系统使用帮助文档](./25-system-user-guide.md)
 
 ## 当前决策摘要
 
